@@ -206,6 +206,7 @@
     font-family: inherit;
     transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
     white-space: nowrap;
+    user-select: none;
   }
   .pill-tab:hover { color: var(--text); }
   .pill-tab.active {
@@ -837,6 +838,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    color: var(--text);
   }
   .dark-toggle:hover { background: var(--input-bg); }
 
@@ -890,7 +892,7 @@
   <!-- 移动端折叠按钮 -->
   <button class="mobile-toggle" onclick="document.querySelector('.panel-left').classList.toggle('collapsed')">☰ 展开/折叠参数面板</button>
 
-  <!-- 左栏：参数输入 -->  <!-- 左栏：参数输入 -->
+  <!-- 左栏：参数输入 -->
   <div class="panel-left" id="panel-left">
     <!-- Tab1: 基本参数 -->
     <div id="tab-basic-inputs">
