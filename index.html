@@ -864,6 +864,8 @@
 </style>
 </head>
 <body>
+<canvas id="bg-canvas" style="display:none;"></canvas>
+
 
 <!-- 顶部栏 -->
 <div class="topbar">
@@ -1171,6 +1173,7 @@
 <script>
 (function() {
   var canvas = document.getElementById('bg-canvas');
+  if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var SEPARATION = 100, COLS = 65, ROWS = 55;
   var count = 0, mouseX = 0, mouseY = 0, targetMouseX = 0, targetMouseY = 0;
@@ -2373,7 +2376,7 @@ function startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, eps
 
 // ==================== Tab 3: 功率扭矩 ====================
 function calcPower() {
-  var resultsDiv = document.getElementById('power-results');
+  var resultsDiv = document.getElementById('power-results-mini');
   var P = parseFloat(document.getElementById('power-p').value);
   var T = parseFloat(document.getElementById('power-t').value);
   var n = parseFloat(document.getElementById('power-n').value);
@@ -2415,7 +2418,7 @@ function clearPower() {
   document.getElementById('power-p').value = '';
   document.getElementById('power-t').value = '';
   document.getElementById('power-n').value = '';
-  document.getElementById('power-results').classList.remove('show');
+  document.getElementById('power-results-mini').innerHTML = '';
 }
 
 // ==================== Tab 4: 强度校核 ====================
