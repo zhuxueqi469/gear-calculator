@@ -309,6 +309,87 @@
     color: var(--text-secondary);
   }
 
+  /* 教程引导按钮 */
+  .guide-btn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 100;
+    background: #fff;
+    color: var(--primary);
+    border: 1.5px solid #7EC8E3;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(74,144,217,0.1);
+  }
+  .guide-btn:hover { background: #EBF4FA; }
+
+  /* 教程遮罩 */
+  .guide-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .guide-overlay.show { display: flex; }
+
+  .guide-panel {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .guide-panel h2 {
+    font-size: 18px;
+    color: var(--primary);
+    margin-bottom: 16px;
+  }
+  .guide-panel h3 {
+    font-size: 14px;
+    color: var(--text);
+    margin: 18px 0 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .guide-panel p, .guide-panel li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+  .guide-panel ul { padding-left: 20px; }
+  .guide-panel .tip {
+    background: var(--result-bg);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .guide-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #8899aa;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .guide-close:hover { color: var(--text); }
+
   @media print {
     body { background: #fff; }
     .tabs, .btn-row, #bg-canvas, .bg-glow, .footer { display: none !important; }
@@ -349,6 +430,9 @@
     <h1>&#9881;&#65039; 齿轮参数计算器</h1>
     <p class="subtitle">渐开线标准直齿圆柱齿轮 &nbsp;|&nbsp; GB/T 1357-2008 &nbsp;|&nbsp; 参数计算 · 啮合分析 · 强度校核</p>
   </div>
+
+  <!-- 教程引导按钮 -->
+  <button class="guide-btn" onclick="openGuide()">&#128218; 教程</button>
 
   <!-- 功能Tab -->
   <div class="tabs" id="tab-bar">
@@ -637,6 +721,38 @@
 
 </div>
 
+<!-- 教程弹窗 -->
+<div class="guide-overlay" id="guide-overlay" onclick="closeGuide(event)">
+  <div class="guide-panel" onclick="event.stopPropagation()">
+    <button class="guide-close" onclick="closeGuide()">&times;</button>
+    <h2>&#128218; 使用教程</h2>
+
+    <h3>1. 基本参数计算</h3>
+    <p>输入 <b>模数 m</b>、<b>齿数 z</b>、<b>分度圆直径 d</b> 中的任意两个，自动算出第三个及全部几何参数（齿顶圆、齿根圆、基圆、齿距、齿厚等）。</p>
+    <div class="tip">&#128161; m+z &rarr; d &nbsp;|&nbsp; d+z &rarr; m &nbsp;|&nbsp; m+d &rarr; z</div>
+
+    <h3>2. 啮合计算</h3>
+    <p>输入模数 m 和两个齿轮的齿数 z&#8321;、z&#8322;，自动算出 <b>中心距 a</b>、<b>传动比 i</b>、两齿轮的分度圆/齿顶圆直径。</p>
+
+    <h3>3. 功率扭矩</h3>
+    <p>基于公式 <b>P = T &times; n / 9550</b>，输入任意两个算第三个。</p>
+
+    <h3>4. 强度校核</h3>
+    <p>基于 <b>GB/T 3480</b> 简化方法校核：</p>
+    <ul>
+      <li><b>齿面接触强度</b> — 防止点蚀失效</li>
+      <li><b>齿根弯曲强度</b> — 防止断齿失效</li>
+    </ul>
+    <p>填写齿轮参数、工况参数、许用应力和安全系数后点"校核"，结果标绿为合格、标红为不合格。</p>
+    <div class="tip">&#128161; 不确定许用应力？点"参考数据"Tab 查看常用材料参数</div>
+
+    <h3>5. 参考数据</h3>
+    <p>提供标准模数系列、精度等级表、常用材料许用应力、核心公式速查。</p>
+
+    <p style="margin-top:20px;text-align:center;color:#8899aa;">点击遮罩区域或右上角 &times; 关闭</p>
+  </div>
+</div>
+
 <div class="footer">渐开线标准直齿圆柱齿轮参数计算器 &nbsp;&middot;&nbsp; GB/T 1357-2008 &nbsp;&middot;&nbsp; GB/T 3480</div>
 
 <!-- ==================== Canvas 粒子波浪背景 ==================== -->
@@ -714,6 +830,19 @@
 
 <!-- ==================== 计算逻辑 ==================== -->
 <script>
+// ==================== 教程弹窗 ====================
+function openGuide() {
+  document.getElementById('guide-overlay').classList.add('show');
+}
+function closeGuide(e) {
+  if (e && e.target !== document.getElementById('guide-overlay')) return;
+  document.getElementById('guide-overlay').classList.remove('show');
+}
+// 点 ESC 关闭
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.getElementById('guide-overlay').classList.remove('show');
+});
+
 // ==================== Tab 切换 (修复: 不再依赖全局 event) ====================
 function switchTab(name) {
   document.querySelectorAll('#tab-bar .tab').forEach(function(t) {
