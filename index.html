@@ -406,11 +406,12 @@
   }
   .guide-panel ul { padding-left: 20px; }
   .guide-panel .tip {
-    background: #1e2530;
+    background: var(--result-bg);
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
     margin-top: 6px;
+    color: var(--text-secondary);
   }
   .guide-close {
     position: absolute;
@@ -419,7 +420,7 @@
     background: none;
     border: none;
     font-size: 22px;
-    color: #6a6e78;
+    color: var(--text-secondary);
     cursor: pointer;
     line-height: 1;
   }
@@ -519,7 +520,11 @@
     .guide-panel h2 { font-size: 16px; }
 
     /* 主题切换按钮 */
-    #theme-btn { top: 10px; right: 60px; padding: 4px 10px; font-size: 12px; }
+    #theme-btn { 
+      top: auto; bottom: 16px; left: 12px; right: auto;
+      padding: 6px 12px; font-size: 13px;
+      border-radius: 20px;
+    }
   }
 
   @media (max-width: 400px) {
