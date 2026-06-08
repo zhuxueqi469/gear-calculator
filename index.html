@@ -415,6 +415,41 @@
     z-index: 1;
   }
 
+  /* 参数帮助提示 */
+  .help-tip {
+    display: inline-block;
+    width: 16px; height: 16px;
+    line-height: 16px;
+    text-align: center;
+    background: #3a3d44;
+    color: #6a6e78;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+    transition: all 0.2s;
+  }
+  .help-tip:hover { background: var(--primary); color: #fff; }
+
+  .tooltip-popup {
+    display: none;
+    position: fixed;
+    z-index: 300;
+    background: #2a2d35;
+    color: var(--text);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    max-width: 260px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    pointer-events: none;
+  }
+  .tooltip-popup.show { display: block; }
+
   /* 响应式 */
   @media (max-width: 600px) {
     .container { padding: 20px 12px; }
@@ -454,27 +489,27 @@
   <div class="card" id="tab-basic">
     <div class="form-row">
       <div class="form-group">
-        <label>模数 m <span class="unit">(mm)</span></label>
+        <label>模数 m <span class="unit">(mm)</span><span class="help-tip" data-help="模数是齿轮基本参数，m = d/z。标准值参考 GB/T 1357-2008，第一系列优先。点击输入框下拉选取标准系列。">?</span></label>
         <input type="text" id="basic-m" placeholder="选择或输入" list="modulus-list" autocomplete="off" oninput="debounceCalc()">
         <datalist id="modulus-list">
         </datalist>
       </div>
       <div class="form-group">
-        <label>齿数 z <span class="unit" id="basic-z-warn" style="display:none;color:#e67e22;font-weight:600;"></span></label>
+        <label>齿数 z <span class="unit" id="basic-z-warn" style="display:none;color:#e67e22;font-weight:600;"></span><span class="help-tip" data-help="齿轮的齿数。标准齿轮最少齿数 z_min = 2ha*/sin²α ≈ 17（α=20°,ha*=1）。z<17 而未变位将产生根切。">?</span></label>
         <input type="number" id="basic-z" placeholder="例如: 30" min="1" step="1" oninput="debounceCalc()">
       </div>
       <div class="form-group">
-        <label>分度圆直径 d <span class="unit">(mm)</span></label>
+        <label>分度圆直径 d <span class="unit">(mm)</span><span class="help-tip" data-help="分度圆是齿轮设计的基准圆，d = m×z。分度圆上的齿厚与齿槽宽相等（非变位时）。输入 m+z 或 d+z 或 m+d 中任意两个算出第三个。">?</span></label>
         <input type="number" id="basic-d" placeholder="或直接输入 d" step="any" min="0.1" oninput="debounceCalc()">
       </div>
       <div class="form-group">
-        <label>变位系数 x</label>
+        <label>变位系数 x<span class="help-tip" data-help="径向变位系数。x>0 为正变位（避免根切、增大齿厚），x<0 为负变位。不变位时为 0。变位后齿厚 s = πm/2 + 2xm·tanα。">?</span></label>
         <input type="number" id="basic-x" placeholder="例如: 0.3" step="any" value="0" oninput="debounceCalc()">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>压力角 &alpha;</label>
+        <label>压力角 &alpha;<span class="help-tip" data-help="标准压力角为 20°（GB/T 1356-2001）。也常用 14.5°（英制老标准）或 25°（大载荷）。压力角越大齿根越厚、齿顶越尖。">?</span></label>
         <select id="basic-alpha" onchange="debounceCalc()">
           <option value="14.5">14.5&deg;</option>
           <option value="20" selected>20&deg; (标准)</option>
@@ -482,14 +517,14 @@
         </select>
       </div>
       <div class="form-group">
-        <label>齿顶高系数 ha*</label>
+        <label>齿顶高系数 ha*<span class="help-tip" data-help="标准值为 1.0。短齿取 0.8，用于提高齿根强度。齿顶高 ha = (ha* + x)m。">?</span></label>
         <select id="basic-ha" onchange="debounceCalc()">
           <option value="0.8">0.8 (短齿)</option>
           <option value="1" selected>1.0 (标准)</option>
         </select>
       </div>
       <div class="form-group">
-        <label>顶隙系数 c*</label>
+        <label>顶隙系数 c*<span class="help-tip" data-help="标准值为 0.25。用于保证齿顶与配对齿轮齿根之间有间隙。齿根高 hf = (ha* + c* - x)m。">?</span></label>
         <select id="basic-c" onchange="debounceCalc()">
           <option value="0.25" selected>0.25 (标准)</option>
           <option value="0.3">0.3</option>
@@ -499,6 +534,7 @@
     <p class="formula-hint">&#128161; 输入任意两个参数即可计算第三个；修改任意值自动实时更新</p>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="calcBasic()">计算</button>
+      <button class="btn btn-outline" onclick="fillExample()">&#128215; 示例</button>
       <button class="btn btn-outline" onclick="clearBasic()">清空</button>
       <button class="btn btn-outline" onclick="saveRecord()">&#128190; 保存方案</button>
       <button class="btn btn-outline" onclick="showHistory()">&#128196; 历史对比</button>
@@ -826,7 +862,10 @@
   </div>
 </div>
 
-<div class="footer">渐开线标准直齿圆柱齿轮参数计算器 &nbsp;&middot;&nbsp; GB/T 1357-2008 &nbsp;&middot;&nbsp; GB/T 3480</div>
+<div class="footer">渐开线标准直齿圆柱齿轮参数计算器 &nbsp;&middot;&nbsp; GB/T 1357-2008 &nbsp;|&nbsp; GB/T 1356-2001 &nbsp;|&nbsp; GB/T 3480 &nbsp;|&nbsp; GB/T 10095</div>
+
+<!-- Tooltip 弹出层 -->
+<div class="tooltip-popup" id="tooltip-popup"></div>
 
 <!-- ==================== Canvas 粒子波浪背景 ==================== -->
 <script>
@@ -912,8 +951,48 @@ function closeGuide(e) {
   document.getElementById('guide-overlay').classList.remove('show');
 }
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') document.getElementById('guide-overlay').classList.remove('show');
+  if (e.key === 'Escape') {
+    document.getElementById('guide-overlay').classList.remove('show');
+    document.getElementById('tooltip-popup').classList.remove('show');
+  }
 });
+
+// ==================== 参数帮助提示 Tooltip ====================
+(function initTooltips() {
+  var popup = document.getElementById('tooltip-popup');
+  document.querySelectorAll('.help-tip').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var help = el.getAttribute('data-help');
+      if (!help) return;
+      if (popup.classList.contains('show') && popup._src === el) {
+        popup.classList.remove('show');
+        return;
+      }
+      popup.textContent = help;
+      popup._src = el;
+      var rect = el.getBoundingClientRect();
+      popup.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
+      popup.style.top = (rect.bottom + 6) + 'px';
+      popup.classList.add('show');
+    });
+  });
+  document.addEventListener('click', function() {
+    popup.classList.remove('show');
+  });
+})();
+
+// ==================== 示例参数填充 ====================
+function fillExample() {
+  document.getElementById('basic-m').value = '2';
+  document.getElementById('basic-z').value = '20';
+  document.getElementById('basic-d').value = '';
+  document.getElementById('basic-x').value = '0';
+  document.getElementById('basic-alpha').value = '20';
+  document.getElementById('basic-ha').value = '1';
+  document.getElementById('basic-c').value = '0.25';
+  calcBasic();
+}
 
 // ==================== 模数标准系列初始化 ====================
 (function initModulusList() {
