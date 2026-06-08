@@ -748,6 +748,94 @@
     .pill-tab { padding: 5px 12px; font-size: 12px; }
   }
 
+  /* === 微交互动画 === */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+  @keyframes resultPop {
+    0% { transform: scale(1.05); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .shake { animation: shake 0.35s ease; }
+  .result-card.new-result { animation: resultPop 0.2s ease; }
+  .gear-visual.fade-in { animation: fadeIn 0.3s ease; }
+
+  /* === 暗黑模式 === */
+  body.dark {
+    --primary: #3B82F6;
+    --primary-dark: #2563EB;
+    --card-bg: #1E293B;
+    --text: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --border: #334155;
+    --input-bg: #1E293B;
+    --result-bg: #1E293B;
+    background: #0F172A;
+  }
+  body.dark .topbar { background: #1E293B; border-color: #334155; }
+  body.dark .panel-left { background: #1E293B; border-color: #334155; }
+  body.dark .panel-right { background: #1E293B; border-color: #334155; }
+  body.dark .panel-center { background: #0F172A; }
+  body.dark .gear-visual { background: #1E293B; border-color: #334155; }
+  body.dark .vis-toolbar { background: #1E293B; border-color: #334155; }
+  body.dark .vis-toolbar button { color: #94A3B8; }
+  body.dark .vis-toolbar button:hover { background: #334155; }
+  body.dark .vis-toolbar button.active { background: #1E3A5F; color: #60A5FA; }
+  body.dark panel-left input, body.dark panel-left select { background: #0F172A; border-color: #334155; color: #F1F5F9; }
+  body.dark .panel-left input, body.dark .panel-left select { background: #0F172A; border-color: #334155; color: #F8FAFC; }
+  body.dark .result-card { background: #1E293B; border-color: #334155; }
+  body.dark .result-card.highlight { background: #1E3A5F; border-color: #2563EB; }
+  body.dark .result-card.highlight .rc-value { color: #60A5FA; }
+  body.dark .check-result.pass { background: #064E3B; border-color: #065F46; }
+  body.dark .check-result.fail { background: #7F1D1D; border-color: #991B1B; }
+  body.dark .std-table th { background: #1E293B; }
+  body.dark .std-table tr:nth-child(even) td { background: #1E293B; }
+  body.dark .guide-panel { background: #1E293B; }
+  body.dark .formula-panel { background: #1E293B; }
+  body.dark .footer { background: #1E293B; border-color: #334155; }
+  body.dark .undercut-banner { background: #7F1D1D; border-color: #DC2626; color: #FCA5A5; }
+  body.dark .z-suggestion { background: #7F1D1D; border-color: #991B1B; color: #FCA5A5; }
+  body.dark .badge-ok { background: #064E3B; color: #6EE7B7; border-color: #065F46; }
+  body.dark .badge-warn { background: #78350F; color: #FCD34D; border-color: #92400E; }
+  body.dark .badge-err { background: #7F1D1D; color: #FCA5A5; border-color: #991B1B; }
+  body.dark .badge-info { background: #1E3A5F; color: #93C5FD; border-color: #2563EB; }
+  body.dark .pill-tabs { background: #1E293B; border-color: #334155; }
+  body.dark .segmented { border-color: #334155; }
+  body.dark .seg-btn { background: #1E293B; color: #94A3B8; border-color: #334155; }
+  body.dark .seg-btn:hover { background: #334155; }
+  body.dark .tooltip-popup { background: #F1F5F9; color: #1E293B; }
+  body.dark .stepper { border-color: #334155; }
+  body.dark .stepper input { background: #0F172A; border-color: #334155; color: #F8FAFC; }
+  body.dark .stepper button { background: #1E293B; color: #94A3B8; }
+  body.dark .stepper button:hover { background: #334155; }
+  body.dark .material-card { background: #1E293B; border-color: #334155; }
+  body.dark .anim-controls { background: #1E293B; border-color: #334155; }
+  body.dark .anim-controls button { background: #1E293B; border-color: #334155; color: #94A3B8; }
+  body.dark .mobile-toggle { background: #1E293B; border-color: #334155; color: #94A3B8; }
+
+  /* 暗黑模式切换按钮 */
+  .dark-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .dark-toggle:hover { background: var(--input-bg); }
+
   /* === 响应式 === */
   @media (max-width: 1024px) {
     .app-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; overflow: visible; }
@@ -781,6 +869,7 @@
       <button class="pill-tab" data-tab="strength">强度校核</button>
     </div>
     <span class="std-badge">GB/T 1357-2008</span>
+    <button class="dark-toggle" onclick="toggleDarkMode()" title="切换暗黑模式" id="dark-toggle">🌙</button>
   </div>
 </div>
 
@@ -1206,6 +1295,19 @@ function fillExample() {
   document.getElementById('basic-z').value = '20';
   updateSliderFill();
 })();
+
+// ==================== 暗黑模式切换 ====================
+(function initDarkMode() {
+  if (localStorage.getItem('gear-dark') === 'true') {
+    document.body.classList.add('dark');
+    document.getElementById('dark-toggle').textContent = '☀️';
+  }
+})();
+function toggleDarkMode() {
+  var isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('gear-dark', isDark);
+  document.getElementById('dark-toggle').textContent = isDark ? '☀️' : '🌙';
+}
 
 // ==================== 模数标准系列初始化 ====================
 (function initModulusList() {
@@ -1736,6 +1838,8 @@ function calcBasic() {
   // 齿轮 SVG 图 -> 放到中栏
   var visDiv = document.getElementById('gear-visual-container');
   visDiv.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">齿轮示意图 (m=' + fmt(m) + ', z=' + z + (x!==0?', x='+fmt(x,2):'') + ')</p>' + drawGearSVG(m, z, ha, hf, d, alpha);
+  visDiv.classList.add('fade-in');
+  setTimeout(function() { visDiv.classList.remove('fade-in'); }, 350);
 
   // 计算过程公式展示 -> 放到中栏下方
   var fDiv = document.getElementById('basic-formulas');
