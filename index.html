@@ -1566,6 +1566,19 @@ function getYSa(z) {
   return 1.67;
 }
 
+// ==================== SVG 路径缓存 ====================
+var _gearPathCache = {};
+function getCachedGearPath(m, z, ha, hf, d, alpha) {
+  var key = m + '|' + z + '|' + ha + '|' + hf + '|' + d + '|' + alpha;
+  if (_gearPathCache[key]) return _gearPathCache[key];
+  var path = drawGearSVG(m, z, ha, hf, d, alpha);
+  _gearPathCache[key] = path;
+  // 限制缓存大小，保留最近20条
+  var keys = Object.keys(_gearPathCache);
+  if (keys.length > 20) delete _gearPathCache[keys[0]];
+  return path;
+}
+
 // ==================== SVG 齿轮绘制 (规范渐开线角度体系) ====================
 function drawGearSVG(m, z, ha, hf, d, alpha) {
   var alphaRad = alpha * Math.PI / 180;
@@ -1588,11 +1601,8 @@ function drawGearSVG(m, z, ha, hf, d, alpha) {
   function sc(v) { return v * scale; }
 
   var toothPitch = 2 * Math.PI / z;
-  // 自适应采样点数 (LOD: z>50→20, z>100→10)
-  var N;
-  if (z > 100) N = 10;
-  else if (z > 50) N = 20;
-  else N = Math.max(30, Math.min(60, Math.floor(2000 / z)));
+  // 自适应采样点数 (LOD: z=10→80, z=100→20, 总顶点~2000)
+  var N = Math.max(20, Math.min(80, Math.floor(2000 / z)));
 
   // 根切检测
   var zMin = Math.ceil(2 * ha / (m * Math.pow(Math.sin(alphaRad), 2)) * m / m);
@@ -1841,7 +1851,7 @@ function calcBasic() {
 
   // 齿轮 SVG 图 -> 放到中栏
   var visDiv = document.getElementById('gear-visual-container');
-  visDiv.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">齿轮示意图 (m=' + fmt(m) + ', z=' + z + (x!==0?', x='+fmt(x,2):'') + ')</p>' + drawGearSVG(m, z, ha, hf, d, alpha);
+  visDiv.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">齿轮示意图 (m=' + fmt(m) + ', z=' + z + (x!==0?', x='+fmt(x,2):'') + ')</p>' + getCachedGearPath(m, z, ha, hf, d, alpha);
   visDiv.classList.add('fade-in');
   setTimeout(function() { visDiv.classList.remove('fade-in'); }, 350);
 
