@@ -558,6 +558,7 @@
       <button class="btn btn-print" onclick="window.print()">&#128424; 打印</button>
     </div>
     <div id="mesh-results" class="results"></div>
+    <canvas id="mesh-canvas" width="600" height="300" style="display:none;width:100%;max-width:600px;margin-top:20px;border-radius:8px;background:#fafbfc;border:1px solid var(--border);"></canvas>
   </div>
 
   <!-- ===== Tab 3: 功率扭矩 ===== -->
@@ -979,74 +980,162 @@ function getYSa(z) {
   return 1.67;
 }
 
-// ==================== SVG 齿轮绘制 ====================
+// ==================== SVG 齿轮绘制 (渐开线齿廓) ====================
 function drawGearSVG(m, z, ha, hf, d, alpha) {
   var da = d + 2 * ha;
   var df = d - 2 * hf;
   var db = d * Math.cos(alpha * Math.PI / 180);
-
-  var svgSize = 260;
+  var ra = da / 2, r = d / 2, rf = df / 2, rb = db / 2;
+  var svgSize = 340;
   var cx = svgSize / 2, cy = svgSize / 2;
-  var scale = (svgSize * 0.42) / (da / 2);
-
+  var margin = 50;
+  var scale = (svgSize / 2 - margin) / ra;
   function sc(v) { return v * scale; }
 
-  var toothAngle = 360 / z;
-  var toothHalf = toothAngle * 0.35; // 齿厚半角
+  var toothAngle = 2 * Math.PI / z;
+  var halfTooth = toothAngle * 0.25; // 齿厚半角 (分度圆上)
 
-  var paths = [];
+  // 生成一个齿的渐开线轮廓 path
+  function toothPath(i) {
+    var baseAngle = i * toothAngle - Math.PI / 2; // 从顶部顺时针
+    // 齿中心在分度圆上的角度
+    var centerAngle = baseAngle + halfTooth * 2.5; // 齿中心偏转
 
-  for (var i = 0; i < z; i++) {
-    var baseAngle = i * toothAngle - 90; // 从顶部开始
-    var rad = baseAngle * Math.PI / 180;
+    // 渐开线: 从基圆开始
+    var rMax = ra, rMin = Math.max(rb, rf);
+    var tMax = Math.sqrt((rMax * rMax) / (rb * rb) - 1);
+    var tMin = rb >= rf ? 0 : Math.sqrt((rMin * rMin) / (rb * rb) - 1);
 
-    // 齿廓: 用简化的梯形近似渐开线
-    var rIn = sc(df / 2), rOut = sc(da / 2);
-    var a1 = baseAngle - toothHalf;
-    var a2 = baseAngle + toothHalf;
+    var n = 8; // 每段点数
+    var ptsR = [], ptsL = [];
 
-    var x1 = cx + rOut * Math.cos(a1 * Math.PI / 180);
-    var y1 = cy + rOut * Math.sin(a1 * Math.PI / 180);
-    var x2 = cx + rOut * Math.cos(a2 * Math.PI / 180);
-    var y2 = cy + rOut * Math.sin(a2 * Math.PI / 180);
-    // 齿根点 (稍宽于齿顶)
-    var rootHalf = toothHalf * 1.05;
-    var a3 = baseAngle + rootHalf;
-    var a4 = baseAngle - rootHalf;
-    var x3 = cx + rIn * Math.cos(a3 * Math.PI / 180);
-    var y3 = cy + rIn * Math.sin(a3 * Math.PI / 180);
-    var x4 = cx + rIn * Math.cos(a4 * Math.PI / 180);
-    var y4 = cy + rIn * Math.sin(a4 * Math.PI / 180);
+    // 右侧渐开线
+    for (var j = 0; j <= n; j++) {
+      var t = tMin + (tMax - tMin) * j / n;
+      var rr = rb * Math.sqrt(1 + t * t);
+      var x = rb * (Math.cos(t) + t * Math.sin(t));
+      var y = rb * (Math.sin(t) - t * Math.cos(t));
+      // 旋转到齿位
+      var ang = centerAngle + Math.atan2(y, x) - t;
+      var cosA = Math.cos(ang), sinA = Math.sin(ang);
+      ptsR.push({x: rr * cosA, y: rr * sinA});
+    }
 
-    paths.push('M' + fmt(x1,1) + ',' + fmt(y1,1) +
-               ' L' + fmt(x4,1) + ',' + fmt(y4,1) +
-               ' A' + fmt(rIn,1) + ',' + fmt(rIn,1) + ' 0 0,1 ' + fmt(x3,1) + ',' + fmt(y3,1) +
-               ' L' + fmt(x2,1) + ',' + fmt(y2,1) +
-               ' A' + fmt(rOut,1) + ',' + fmt(rOut,1) + ' 0 0,1 ' + fmt(x1,1) + ',' + fmt(y1,1) + ' Z');
+    // 左侧渐开线 (镜像)
+    for (var j = n; j >= 0; j--) {
+      var t = tMin + (tMax - tMin) * j / n;
+      var rr = rb * Math.sqrt(1 + t * t);
+      var x = rb * (Math.cos(t) + t * Math.sin(t));
+      var y = -(rb * (Math.sin(t) - t * Math.cos(t)));
+      var ang = centerAngle + Math.atan2(y, x) - t;
+      var cosA = Math.cos(ang), sinA = Math.sin(ang);
+      ptsL.push({x: rr * cosA, y: rr * sinA});
+    }
+
+    var d = '';
+    // 从右侧顶部开始
+    d += 'M' + fmt(ptsR[0].x, 2) + ',' + fmt(ptsR[0].y, 2);
+    // 右侧渐开线曲线
+    for (var j = 1; j < ptsR.length; j++) {
+      d += ' L' + fmt(ptsR[j].x, 2) + ',' + fmt(ptsR[j].y, 2);
+    }
+    // 齿顶弧
+    var a1 = Math.atan2(ptsR[ptsR.length-1].y, ptsR[ptsR.length-1].x);
+    var a2 = Math.atan2(ptsL[0].y, ptsL[0].x);
+    if (a2 < a1) a2 += 2 * Math.PI;
+    d += ' A' + fmt(ra, 2) + ',' + fmt(ra, 2) + ' 0 0,1 ' + fmt(ptsL[0].x, 2) + ',' + fmt(ptsL[0].y, 2);
+    // 左侧渐开线
+    for (var j = 1; j < ptsL.length; j++) {
+      d += ' L' + fmt(ptsL[j].x, 2) + ',' + fmt(ptsL[j].y, 2);
+    }
+    // 齿根弧连接到下一个齿
+    var a3 = Math.atan2(ptsL[ptsL.length-1].y, ptsL[ptsL.length-1].x);
+    // 下一个齿右起点
+    var nextCenterAngle = centerAngle + toothAngle;
+    var tN = tMin;
+    var rrN = rb * Math.sqrt(1 + tN * tN);
+    var xN = rb * (Math.cos(tN) + tN * Math.sin(tN));
+    var yN = rb * (Math.sin(tN) - tN * Math.cos(tN));
+    var angN = nextCenterAngle + Math.atan2(yN, xN) - tN;
+    var a4 = angN;
+
+    if (a4 < a3) a4 += 2 * Math.PI;
+    var arcR = rf;
+    d += ' A' + fmt(arcR, 2) + ',' + fmt(arcR, 2) + ' 0 0,1 ' +
+         fmt(arcR * Math.cos(a4), 2) + ',' + fmt(arcR * Math.sin(a4), 2);
+
+    return d;
   }
 
+  var paths = [];
+  for (var i = 0; i < z; i++) {
+    paths.push(toothPath(i));
+  }
+
+  // 尺寸标注偏移
+  var lblR = svgSize / 2 - margin + 8;
+  var rS = sc(r), raS = sc(ra), rfS = sc(rf), rbS = sc(rb);
+
   var svg = '<svg width="' + svgSize + '" height="' + svgSize + '" viewBox="0 0 ' + svgSize + ' ' + svgSize + '" xmlns="http://www.w3.org/2000/svg">';
+
+  // defs - 箭头标记
+  svg += '<defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 Z" fill="#e67e22"/></marker></defs>';
+
+  // 齿廓
   svg += '<g transform="translate(' + cx + ',' + cy + ')">';
 
-  // 分度圆 (虚线)
-  svg += '<circle r="' + fmt(sc(d/2),1) + '" fill="none" stroke="#4A90D9" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>';
   // 基圆
-  svg += '<circle r="' + fmt(sc(db/2),1) + '" fill="none" stroke="#95a5b4" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>';
+  svg += '<circle r="' + fmt(rbS,1) + '" fill="none" stroke="#95a5b4" stroke-width="0.8" stroke-dasharray="4,2" opacity="0.5"/>';
   // 齿根圆
-  svg += '<circle r="' + fmt(sc(df/2),1) + '" fill="none" stroke="#bcc4cc" stroke-width="0.8" opacity="0.4"/>';
-  // 齿顶圆
-  svg += '<circle r="' + fmt(sc(da/2),1) + '" fill="none" stroke="#7EC8E3" stroke-width="0.8" opacity="0.5"/>';
+  svg += '<circle r="' + fmt(rfS,1) + '" fill="none" stroke="#bcc4cc" stroke-width="0.6" opacity="0.3"/>';
+  // 分度圆
+  svg += '<circle r="' + fmt(rS,1) + '" fill="none" stroke="#4A90D9" stroke-width="1.2" stroke-dasharray="6,3" opacity="0.5"/>';
 
-  svg += '</g>';
-
-  // 齿廓路径
-  svg += '<g fill="#4A90D9" fill-opacity="0.15" stroke="#4A90D9" stroke-width="1.2">';
+  // 齿轮实体
+  svg += '<g fill="#4A90D9" fill-opacity="0.18" stroke="#3A7BC8" stroke-width="1.5">';
   paths.forEach(function(p) { svg += '<path d="' + p + '"/>'; });
   svg += '</g>';
 
+  // 齿顶圆 (最上层)
+  svg += '<circle r="' + fmt(raS,1) + '" fill="none" stroke="#7EC8E3" stroke-width="1" opacity="0.6"/>';
+
+  svg += '</g>';
+
+  // 尺寸标注线 (从中心向右)
+  var labelX = cx + rS + 15;
+
+  // 分度圆标注
+  svg += '<line x1="' + cx + '" y1="' + (cy - rS) + '" x2="' + labelX + '" y2="' + (cy - rS) + '" stroke="#4A90D9" stroke-width="0.8"/>';
+  svg += '<text x="' + (labelX + 4) + '" y="' + (cy - rS + 4) + '" fill="#4A90D9" font-size="11" font-family="sans-serif">d=' + fmt(d) + '</text>';
+
+  // 齿顶圆标注
+  svg += '<line x1="' + cx + '" y1="' + (cy - raS) + '" x2="' + (labelX + 10) + '" y2="' + (cy - raS - 12) + '" stroke="#7EC8E3" stroke-width="0.8"/>';
+  svg += '<text x="' + (labelX + 14) + '" y="' + (cy - raS - 8) + '" fill="#7EC8E3" font-size="10" font-family="sans-serif">da=' + fmt(da) + '</text>';
+
+  // 齿根圆标注
+  svg += '<line x1="' + cx + '" y1="' + (cy - rfS) + '" x2="' + (labelX + 10) + '" y2="' + (cy - rfS + 12) + '" stroke="#bcc4cc" stroke-width="0.8"/>';
+  svg += '<text x="' + (labelX + 14) + '" y="' + (cy - rfS + 16) + '" fill="#8899aa" font-size="10" font-family="sans-serif">df=' + fmt(df) + '</text>';
+
+  // 基圆标注 (只在内侧)
+  if (rbS > 15) {
+    svg += '<line x1="' + cx + '" y1="' + (cy - rbS) + '" x2="' + labelX + '" y2="' + (cy - rbS + 28) + '" stroke="#95a5b4" stroke-width="0.6"/>';
+    svg += '<text x="' + (labelX + 4) + '" y="' + (cy - rbS + 32) + '" fill="#95a5b4" font-size="9" font-family="sans-serif">db=' + fmt(db) + '</text>';
+  }
+
   // 中心孔
-  var holeR = sc(d/2) * 0.25;
+  var holeR = rS * 0.22;
   svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + fmt(holeR,1) + '" fill="#fff" stroke="#4A90D9" stroke-width="1.5"/>';
+
+  // 图例
+  svg += '<rect x="8" y="' + (svgSize-72) + '" width="125" height="64" rx="4" fill="#fff" fill-opacity="0.85" stroke="#ddd" stroke-width="0.5"/>';
+  svg += '<line x1="14" y1="' + (svgSize-58) + '" x2="34" y2="' + (svgSize-58) + '" stroke="#7EC8E3" stroke-width="1.5"/>';
+  svg += '<text x="38" y="' + (svgSize-54) + '" fill="#666" font-size="9" font-family="sans-serif">齿顶圆 da</text>';
+  svg += '<line x1="14" y1="' + (svgSize-46) + '" x2="34" y2="' + (svgSize-46) + '" stroke="#4A90D9" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  svg += '<text x="38" y="' + (svgSize-42) + '" fill="#666" font-size="9" font-family="sans-serif">分度圆 d</text>';
+  svg += '<line x1="14" y1="' + (svgSize-34) + '" x2="34" y2="' + (svgSize-34) + '" stroke="#bcc4cc" stroke-width="1.5"/>';
+  svg += '<text x="38" y="' + (svgSize-30) + '" fill="#666" font-size="9" font-family="sans-serif">齿根圆 df</text>';
+  svg += '<line x1="14" y1="' + (svgSize-22) + '" x2="34" y2="' + (svgSize-22) + '" stroke="#95a5b4" stroke-width="0.8" stroke-dasharray="2,2"/>';
+  svg += '<text x="38" y="' + (svgSize-18) + '" fill="#666" font-size="9" font-family="sans-serif">基圆 db</text>';
 
   svg += '</svg>';
   return svg;
@@ -1354,6 +1443,8 @@ function calcMesh() {
 
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
+  // 启动啮合动画
+  startMeshAnimation(m, z1, z2, x1, x2, haStar, cStar, alpha, d1, d2, da1, da2, db1, db2, a);
 }
 
 function clearMesh() {
@@ -1366,6 +1457,214 @@ function clearMesh() {
   document.getElementById('mesh-ha').value = '1';
   document.getElementById('mesh-c').value = '0.25';
   document.getElementById('mesh-results').classList.remove('show');
+  stopMeshAnimation();
+}
+
+// ==================== 啮合动画 Canvas ====================
+var _meshAnimId = null;
+
+function stopMeshAnimation() {
+  if (_meshAnimId) { cancelAnimationFrame(_meshAnimId); _meshAnimId = null; }
+  var c = document.getElementById('mesh-canvas');
+  if (c) c.style.display = 'none';
+}
+
+function startMeshAnimation(m, z1, z2, x1, x2, haStar, cStar, alpha, d1, d2, da1, da2, db1, db2, a) {
+  stopMeshAnimation();
+  var canvas = document.getElementById('mesh-canvas');
+  var ctx = canvas.getContext('2d');
+  canvas.style.display = 'block';
+
+  var W = canvas.width, H = canvas.height;
+  var ra1 = da1 / 2, ra2 = da2 / 2;
+  var r1 = d1 / 2, r2 = d2 / 2;
+  var rb1 = db1 / 2, rb2 = db2 / 2;
+
+  // 缩放使两个齿轮都可见
+  var pitchX = W * 0.38; // pitch point x
+  var pitchY = H / 2;
+  var scale = (W * 0.32) / Math.max(ra1, ra2);
+  var sc = function(v) { return v * scale; };
+
+  var sr1 = sc(r1), sr2 = sc(r2);
+  var sra1 = sc(ra1), sra2 = sc(ra2);
+  var srb1 = sc(rb1), srb2 = sc(rb2);
+
+  // 齿轮中心位置
+  var cx1 = pitchX - sr1, cy1 = pitchY;
+  var cx2 = pitchX + sr2, cy2 = pitchY;
+
+  var angle = 0;
+  var toothAngle1 = 2 * Math.PI / z1;
+  var toothAngle2 = 2 * Math.PI / z2;
+
+  function drawToothMarks(cx, cy, rOuter, rInner, z, baseAngle, toothW) {
+    for (var i = 0; i < z; i++) {
+      var a = baseAngle + i * (2 * Math.PI / z);
+      var a1 = a - toothW / 2;
+      var a2 = a + toothW / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + rInner * Math.cos(a1), cy + rInner * Math.sin(a1));
+      ctx.lineTo(cx + rOuter * Math.cos(a1), cy + rOuter * Math.sin(a1));
+      ctx.arc(cx, cy, rOuter, a1, a2);
+      ctx.lineTo(cx + rInner * Math.cos(a2), cy + rInner * Math.sin(a2));
+      ctx.arc(cx, cy, rInner, a2, a1, true);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // 标题
+    ctx.fillStyle = '#5a6c7d';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('啮合示意图', 10, 18);
+
+    // 啮合线 (从两基圆公切线过节点)
+    var pressureAngle = alpha * Math.PI / 180;
+    var sinPA = Math.sin(pressureAngle);
+    var cosPA = Math.cos(pressureAngle);
+
+    // 啮合线方向
+    var lineDX = sinPA, lineDY = cosPA;
+    var lineLen = W;
+    var lx1 = pitchX - lineDX * lineLen;
+    var ly1 = pitchY + lineDY * lineLen;
+    var lx2 = pitchX + lineDX * lineLen;
+    var ly2 = pitchY - lineDY * lineLen;
+
+    ctx.strokeStyle = 'rgba(231,76,60,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.moveTo(lx1, ly1);
+    ctx.lineTo(lx2, ly2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 基圆切线标记
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('啮合线', lx1 + 5, ly1 - 4);
+
+    // 绘制齿轮1 (小齿轮, 蓝色, 顺时针)
+    ctx.save();
+    // 齿轮1实体
+    ctx.fillStyle = 'rgba(74,144,217,0.12)';
+    ctx.strokeStyle = '#4A90D9';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx1, cy1, sra1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 齿形
+    ctx.fillStyle = 'rgba(74,144,217,0.25)';
+    drawToothMarks(cx1, cy1, sra1, sc(r1 * 0.9), z1, angle, toothAngle1 * 0.5);
+
+    // 分度圆
+    ctx.strokeStyle = '#4A90D9';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(cx1, cy1, sr1, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 基圆
+    ctx.strokeStyle = 'rgba(149,165,180,0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.arc(cx1, cy1, srb1, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 标签
+    ctx.fillStyle = '#4A90D9';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('z₁=' + z1, cx1 - 18, cy1 - sra1 - 8);
+    ctx.restore();
+
+    // 绘制齿轮2 (大齿轮, 绿色, 逆时针)
+    ctx.save();
+    ctx.fillStyle = 'rgba(39,174,96,0.12)';
+    ctx.strokeStyle = '#27ae60';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, sra2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 齿形 (反向旋转)
+    ctx.fillStyle = 'rgba(39,174,96,0.25)';
+    drawToothMarks(cx2, cy2, sra2, sc(r2 * 0.9), z2, -angle * z1 / z2 + Math.PI / z2, toothAngle2 * 0.5);
+
+    // 分度圆
+    ctx.strokeStyle = '#27ae60';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, sr2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 基圆
+    ctx.strokeStyle = 'rgba(149,165,180,0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, srb2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#27ae60';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('z₂=' + z2, cx2 - 18, cy2 - sra2 - 8);
+    ctx.restore();
+
+    // 节点
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(pitchX, pitchY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('节点', pitchX + 8, pitchY + 14);
+
+    // 中心距标注
+    ctx.strokeStyle = '#8899aa';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(cx1, cy1 + sra1 + 15);
+    ctx.lineTo(cx2, cy2 + sra2 + 15);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 箭头
+    ctx.beginPath();
+    ctx.moveTo(cx2, cy2 + sra2 + 15);
+    ctx.lineTo(cx2 - 6, cy2 + sra2 + 11);
+    ctx.moveTo(cx2, cy2 + sra2 + 15);
+    ctx.lineTo(cx2 - 6, cy2 + sra2 + 19);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx1, cy1 + sra1 + 15);
+    ctx.lineTo(cx1 + 6, cy1 + sra1 + 11);
+    ctx.moveTo(cx1, cy1 + sra1 + 15);
+    ctx.lineTo(cx1 + 6, cy1 + sra1 + 19);
+    ctx.stroke();
+    ctx.fillStyle = '#5a6c7d';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('a=' + fmt(a), (cx1+cx2)/2 - 20, cy1 + sra1 + 28);
+
+    angle += 0.03;
+    _meshAnimId = requestAnimationFrame(draw);
+  }
+
+  draw();
 }
 
 // ==================== Tab 3: 功率扭矩 ====================
