@@ -1088,8 +1088,11 @@ function drawGearSVG(m, z, ha, hf, d, alpha) {
   function sc(v) { return v * scale; }
 
   var toothPitch = 2 * Math.PI / z;
-  // 自适应采样点数
-  var N = Math.max(25, Math.min(60, Math.floor(2000 / z)));
+  // 自适应采样点数 (LOD: z>50→20, z>100→10)
+  var N;
+  if (z > 100) N = 10;
+  else if (z > 50) N = 20;
+  else N = Math.max(30, Math.min(60, Math.floor(2000 / z)));
 
   // 根切检测
   var zMin = Math.ceil(2 * ha / (m * Math.pow(Math.sin(alphaRad), 2)) * m / m);
@@ -1283,12 +1286,14 @@ function calcBasic() {
     return;
   }
 
-  // 根切警告
+  // 根切检测 + 建议变位系数
   var zWarn = document.getElementById('basic-z-warn');
-  var zMin = Math.floor(2 * haStar / Math.pow(Math.sin(alpha * Math.PI / 180), 2)); // 理论最少齿数
-  if (z < zMin && x <= 0.001) {
+  var alphaRad = alpha * Math.PI / 180;
+  var zMin = Math.ceil(2 * haStar / Math.pow(Math.sin(alphaRad), 2));
+  var requiredX = haStar * (zMin - z) / zMin;
+  if (z < zMin && x < requiredX - 0.001) {
     zWarn.style.display = 'inline';
-    zWarn.textContent = ' \u26a0\uFE0F z<' + zMin + ' 可能根切，建议正变位';
+    zWarn.textContent = ' ⚠ 根切！z<' + zMin + '，建议 x≥' + fmt(requiredX, 3);
   } else {
     zWarn.style.display = 'none';
   }
