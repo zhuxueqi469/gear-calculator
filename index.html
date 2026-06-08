@@ -1452,22 +1452,19 @@ function applyUndercutFix() {
 function updateBadges(m, z, x, alpha, haStar, cStar) {
   var row = document.getElementById('badge-row');
   var badges = [];
-  // 标准齿轮判定
   if (Math.abs(x) < 0.001 && alpha === 20 && haStar === 1 && cStar === 0.25) {
-    badges.push('<span class="badge badge-ok">✓ 标准齿轮</span>');
+    badges.push('<span class="badge badge-ok">\u2713 标准齿轮</span>');
   } else if (Math.abs(x) > 0.001) {
     badges.push('<span class="badge badge-info">变位 x=' + fmt(x,2) + '</span>');
   }
-  if (alpha !== 20) badges.push('<span class="badge badge-info">α=' + alpha + '°</span>');
-  
-  // 根切判定
+  if (alpha !== 20) badges.push('<span class="badge badge-info">\u03b1=' + alpha + '\u00b0</span>');
   var alphaRad = alpha * Math.PI / 180;
   var zMin = Math.ceil(2 * haStar / Math.pow(Math.sin(alphaRad), 2));
   if (z < zMin && x < 0.001) {
     var reqX = haStar * (zMin - z) / zMin;
-    badges.push('<span class="badge badge-err">⚠ 根切！建议x≥' + fmt(reqX,3) + '</span>');
+    badges.push('<span class="badge badge-err">\u26a0 根切！建议x\u2265' + fmt(reqX,3) + '</span>');
   } else {
-    badges.push('<span class="badge badge-ok">✓ 无根切</span>');
+    badges.push('<span class="badge badge-ok">\u2713 无根切</span>');
   }
   row.innerHTML = badges.join('');
 }
@@ -1476,7 +1473,6 @@ function updateBadges(m, z, x, alpha, haStar, cStar) {
 var _animSpeed = 1;
 var _animPaused = false;
 var _animBaseIncrement = 0.025;
-
 function animPlay() {
   _animPaused = false;
   document.getElementById('btn-play').classList.add('active');
@@ -1489,7 +1485,6 @@ function animPause() {
 }
 function animStop() {
   _animPaused = true;
-  // Reset animation - re-trigger calc to restart
   document.getElementById('btn-play').classList.remove('active');
   document.getElementById('btn-pause').classList.remove('active');
   calcMesh();
@@ -1500,22 +1495,16 @@ function animSetSpeed(v) {
 }
 
 // ==================== Tab 切换 (药丸导航) ====================
-// ==================== Tab 切换 (药丸导航) ====================
-// ==================== Tab 切换 (药丸导航) ====================
 function switchTab(name) {
   document.querySelectorAll('#pill-bar .pill-tab').forEach(function(t) {
     t.classList.remove('active');
   });
   var tabBtn = document.querySelector('#pill-bar .pill-tab[data-tab="' + name + '"]');
   if (tabBtn) tabBtn.classList.add('active');
-
-  // 切换左栏输入面板
   ['basic','mesh','strength'].forEach(function(id) {
     var el = document.getElementById('tab-' + id + '-inputs');
     if (el) el.style.display = (id === name) ? '' : 'none';
   });
-
-  // 切换中栏可视化
   if (name === 'mesh') {
     document.getElementById('gear-visual-container').style.display = 'none';
     document.getElementById('basic-formulas').style.display = 'none';
@@ -1525,9 +1514,7 @@ function switchTab(name) {
     document.getElementById('mesh-canvas').style.display = 'none';
     stopMeshAnimation();
   }
-
-  // 切换右栏结果
-  document.getElementById('basic-results').innerHTML = '<p style="color:var(--text-secondary);font-size:13px;">请在左侧输入参数后点击计算</p>';
+  document.getElementById('basic-results').innerHTML = '<p style="color:var(--text-secondary);font-size:13px;">\u8bf7\u5728\u5de6\u4fa7\u8f93\u5165\u53c2\u6570\u540e\u70b9\u51fb\u8ba1\u7b97</p>';
   document.getElementById('mesh-results').innerHTML = '';
   document.getElementById('strength-results').innerHTML = '';
 }
