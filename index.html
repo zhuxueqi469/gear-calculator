@@ -458,6 +458,34 @@
         <label>分度圆直径 d <span class="unit">(mm)</span></label>
         <input type="number" id="basic-d" placeholder="或直接输入 d" step="any" min="0.1">
       </div>
+      <div class="form-group">
+        <label>变位系数 x</label>
+        <input type="number" id="basic-x" placeholder="例如: 0.3" step="any" value="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>压力角 &alpha;</label>
+        <select id="basic-alpha">
+          <option value="14.5">14.5&deg;</option>
+          <option value="20" selected>20&deg; (标准)</option>
+          <option value="25">25&deg;</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>齿顶高系数 ha*</label>
+        <select id="basic-ha">
+          <option value="0.8">0.8 (短齿)</option>
+          <option value="1" selected>1.0 (标准)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>顶隙系数 c*</label>
+        <select id="basic-c">
+          <option value="0.25" selected>0.25 (标准)</option>
+          <option value="0.3">0.3</option>
+        </select>
+      </div>
     </div>
     <p class="formula-hint">&#128161; 输入任意两个参数即可计算第三个：m+z &rarr; d；d+z &rarr; m；m+d &rarr; z</p>
     <div class="btn-row">
@@ -468,7 +496,7 @@
     <div id="basic-results" class="results"></div>
   </div>
 
-  <!-- ===== Tab 2: 啮合计算 ===== -->
+  <!-- ===== Tab 2: 啮合分析 ===== -->
   <div class="card" id="tab-mesh" style="display:none;">
     <div class="form-row">
       <div class="form-group">
@@ -483,8 +511,40 @@
         <label>大齿轮齿数 z&#8322;</label>
         <input type="number" id="mesh-z2" placeholder="例如: 60" min="1" step="1">
       </div>
+      <div class="form-group">
+        <label>变位系数 x&#8321;</label>
+        <input type="number" id="mesh-x1" placeholder="例如: 0.2" step="any" value="0">
+      </div>
     </div>
-    <p class="formula-hint">&#128161; 计算一对啮合齿轮的中心距、传动比及各齿轮的分度圆/齿顶圆直径</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>变位系数 x&#8322;</label>
+        <input type="number" id="mesh-x2" placeholder="例如: 0" step="any" value="0">
+      </div>
+      <div class="form-group">
+        <label>压力角 &alpha;</label>
+        <select id="mesh-alpha">
+          <option value="14.5">14.5&deg;</option>
+          <option value="20" selected>20&deg; (标准)</option>
+          <option value="25">25&deg;</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>齿顶高系数 ha*</label>
+        <select id="mesh-ha">
+          <option value="0.8">0.8 (短齿)</option>
+          <option value="1" selected>1.0 (标准)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>顶隙系数 c*</label>
+        <select id="mesh-c">
+          <option value="0.25" selected>0.25 (标准)</option>
+          <option value="0.3">0.3</option>
+        </select>
+      </div>
+    </div>
+    <p class="formula-hint">&#128161; 计算中心距、传动比、重合度 &epsilon; 和滑动率</p>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="calcMesh()">计算</button>
       <button class="btn btn-outline" onclick="clearMesh()">清空</button>
@@ -728,11 +788,18 @@
     <h2>&#128218; 使用教程</h2>
 
     <h3>1. 基本参数计算</h3>
-    <p>输入 <b>模数 m</b>、<b>齿数 z</b>、<b>分度圆直径 d</b> 中的任意两个，自动算出第三个及全部几何参数（齿顶圆、齿根圆、基圆、齿距、齿厚等）。</p>
+    <p>输入 <b>模数 m</b>、<b>齿数 z</b>、<b>分度圆直径 d</b> 中的任意两个，自动算出第三个及全部几何参数。</p>
+    <p>可自定义 <b>压力角 &alpha;</b>、<b>齿顶高系数 ha*</b>、<b>顶隙系数 c*</b>，支持 <b>变位系数 x</b>（变位后齿厚/齿槽宽自动调整）。</p>
     <div class="tip">&#128161; m+z &rarr; d &nbsp;|&nbsp; d+z &rarr; m &nbsp;|&nbsp; m+d &rarr; z</div>
 
-    <h3>2. 啮合计算</h3>
-    <p>输入模数 m 和两个齿轮的齿数 z&#8321;、z&#8322;，自动算出 <b>中心距 a</b>、<b>传动比 i</b>、两齿轮的分度圆/齿顶圆直径。</p>
+    <h3>2. 啮合分析</h3>
+    <p>输入模数 m、两齿轮齿数 z&#8321;/z&#8322; 及变位系数 x&#8321;/x&#8322;，算出：</p>
+    <ul>
+      <li><b>中心距 a</b> — 变位齿轮的啮合角自动迭代求解</li>
+      <li><b>传动比 i</b> — z&#8322;/z&#8321;，显示约分形式</li>
+      <li><b>重合度 &epsilon;</b> — &ge; 1.2 为连续传动可靠</li>
+      <li><b>滑动率 &eta;</b> — 两齿轮齿顶相对滑动率</li>
+    </ul>
 
     <h3>3. 功率扭矩</h3>
     <p>基于公式 <b>P = T &times; n / 9550</b>，输入任意两个算第三个。</p>
@@ -896,15 +963,13 @@ function getYSa(z) {
 }
 
 // ==================== SVG 齿轮绘制 ====================
-function drawGearSVG(m, z) {
-  var d = m * z;          // 分度圆直径
-  var da = m * (z + 2);   // 齿顶圆直径
-  var df = m * (z - 2.5); // 齿根圆直径
-  var db = d * Math.cos(20 * Math.PI / 180); // 基圆直径
+function drawGearSVG(m, z, ha, hf, d, alpha) {
+  var da = d + 2 * ha;
+  var df = d - 2 * hf;
+  var db = d * Math.cos(alpha * Math.PI / 180);
 
   var svgSize = 260;
   var cx = svgSize / 2, cy = svgSize / 2;
-  // 缩放使齿顶圆填满 85%
   var scale = (svgSize * 0.42) / (da / 2);
 
   function sc(v) { return v * scale; }
@@ -976,6 +1041,10 @@ function calcBasic() {
   var mVal = parseFloat(document.getElementById('basic-m').value);
   var zVal = parseInt(document.getElementById('basic-z').value);
   var dVal = parseFloat(document.getElementById('basic-d').value);
+  var x    = parseFloat(document.getElementById('basic-x').value) || 0;
+  var alpha = parseFloat(document.getElementById('basic-alpha').value);
+  var haStar = parseFloat(document.getElementById('basic-ha').value);
+  var cStar  = parseFloat(document.getElementById('basic-c').value);
 
   var m, z, d;
   var hasM = !isNaN(mVal) && mVal > 0;
@@ -994,7 +1063,7 @@ function calcBasic() {
   } else if (hasD && hasZ) {
     d = dVal; z = zVal; m = d / z;
   } else if (hasM && hasD) {
-    m = mVal; d = dVal; z = Math.round(d / m); // 齿数取整
+    m = mVal; d = dVal; z = Math.round(d / m);
   }
 
   if (m <= 0 || z <= 0) {
@@ -1004,23 +1073,22 @@ function calcBasic() {
   }
 
   d = m * z;
-  var da = m * (z + 2);
-  var df = m * (z - 2.5);
-  var db = d * Math.cos(20 * Math.PI / 180);
+  var cosAlpha = Math.cos(alpha * Math.PI / 180);
+  var ha = (haStar + x) * m;
+  var hf = (haStar + cStar - x) * m;
+  var da = d + 2 * ha;         // 齿顶圆直径
+  var df = d - 2 * hf;         // 齿根圆直径
+  var db = d * cosAlpha;       // 基圆直径
   var p = Math.PI * m;
-  var s = p / 2;
-  var e = p / 2;
-  var ha = m;
-  var hf = 1.25 * m;
+  var s = Math.PI * m / 2 + 2 * x * m * Math.tan(alpha * Math.PI / 180); // 变位齿厚
+  var e = Math.PI * m / 2 - 2 * x * m * Math.tan(alpha * Math.PI / 180); // 变位齿槽宽
   var h = ha + hf;
-
-  // 顶级线速度
-  var v_guess = Math.PI * d * 1000 / 60000; // 假设 n=1000 rpm
 
   var html = '<div class="result-section-title">&#128208; 计算结果</div>';
   html += '<div class="result-grid">';
   html += r('模数 m', fmt(m), 'mm', true);
   html += r('齿数 z', String(z), '', false);
+  html += r('压力角 &alpha;', String(alpha) + '&deg;', '', false);
   html += r('分度圆直径 d', fmt(d), 'mm', true);
   html += r('齿顶圆直径 da', fmt(da), 'mm');
   html += r('齿根圆直径 df', fmt(df), 'mm');
@@ -1031,36 +1099,47 @@ function calcBasic() {
   html += r('齿顶高 ha', fmt(ha), 'mm');
   html += r('齿根高 hf', fmt(hf), 'mm');
   html += r('全齿高 h', fmt(h), 'mm');
+  if (x !== 0) html += r('变位系数 x', fmt(x,2), '', false);
   html += '</div>';
 
   // 齿轮 SVG 图
   html += '<div class="gear-visual">';
-  html += '<p style="font-size:13px;color:#8899aa;margin-bottom:10px;">&#128736; 齿轮示意图 (m=' + fmt(m) + ', z=' + z + ')</p>';
-  html += drawGearSVG(m, z);
+  html += '<p style="font-size:13px;color:#8899aa;margin-bottom:10px;">&#128736; 齿轮示意图 (m=' + fmt(m) + ', z=' + z + (x!==0?', x='+fmt(x,2):'') + ')</p>';
+  html += drawGearSVG(m, z, ha, hf, d, alpha);
   html += '</div>';
 
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
 }
 
+function clearBasic() {
+  document.getElementById('basic-m').value = '';
+  document.getElementById('basic-z').value = '';
+  document.getElementById('basic-d').value = '';
+  document.getElementById('basic-x').value = '0';
+  document.getElementById('basic-alpha').value = '20';
+  document.getElementById('basic-ha').value = '1';
+  document.getElementById('basic-c').value = '0.25';
+  document.getElementById('basic-results').classList.remove('show');
+}
+
+// 结果项 HTML 生成器
 function r(label, value, unit, hl) {
   var cls = hl ? ' result-item highlight' : ' result-item';
   return '<div class="' + cls + '"><div class="r-label">' + label + '</div><div class="r-value">' + value + '<span class="r-unit">' + unit + '</span></div></div>';
 }
 
-function clearBasic() {
-  document.getElementById('basic-m').value = '';
-  document.getElementById('basic-z').value = '';
-  document.getElementById('basic-d').value = '';
-  document.getElementById('basic-results').classList.remove('show');
-}
-
-// ==================== Tab 2: 啮合计算 ====================
+// ==================== Tab 2: 啮合分析 ====================
 function calcMesh() {
   var resultsDiv = document.getElementById('mesh-results');
   var m = parseFloat(document.getElementById('mesh-m').value);
   var z1 = parseInt(document.getElementById('mesh-z1').value);
   var z2 = parseInt(document.getElementById('mesh-z2').value);
+  var x1 = parseFloat(document.getElementById('mesh-x1').value) || 0;
+  var x2 = parseFloat(document.getElementById('mesh-x2').value) || 0;
+  var alpha = parseFloat(document.getElementById('mesh-alpha').value);
+  var haStar = parseFloat(document.getElementById('mesh-ha').value);
+  var cStar = parseFloat(document.getElementById('mesh-c').value);
 
   if (isNaN(m) || isNaN(z1) || isNaN(z2)) {
     resultsDiv.innerHTML = '<p style="color:#e74c3c;margin-top:16px;">请完整输入模数 m、齿数 z&#8321; 和 z&#8322;</p>';
@@ -1073,30 +1152,82 @@ function calcMesh() {
     return;
   }
 
-  var a = m * (z1 + z2) / 2;
-  var i = z2 / z1;
-  var d1 = m * z1;
-  var d2 = m * z2;
-  var da1 = m * (z1 + 2);
-  var da2 = m * (z2 + 2);
-  var p = Math.PI * m;
+  var cosAlpha = Math.cos(alpha * Math.PI / 180);
+  var tanAlpha = Math.tan(alpha * Math.PI / 180);
 
-  // 简化 GCD 约分
+  // 基本尺寸
+  var d1 = m * z1, d2 = m * z2;
+  var ha1 = (haStar + x1) * m, ha2 = (haStar + x2) * m;
+  var hf1 = (haStar + cStar - x1) * m, hf2 = (haStar + cStar - x2) * m;
+  var da1 = d1 + 2 * ha1, da2 = d2 + 2 * ha2;
+  var df1 = d1 - 2 * hf1, df2 = d2 - 2 * hf2;
+  var db1 = d1 * cosAlpha, db2 = d2 * cosAlpha;
+  var ra1 = da1 / 2, ra2 = da2 / 2;
+  var rb1 = db1 / 2, rb2 = db2 / 2;
+
+  // 传动比
+  var i = z2 / z1;
+
+  // 标准中心距
+  var a0 = (d1 + d2) / 2;
+
+  // 啮合角 (变位齿轮)
+  var invAlpha = tanAlpha - alpha * Math.PI / 180;
+  var invAlphaW = invAlpha + 2 * (x1 + x2) * tanAlpha / (z1 + z2);
+
+  // 迭代求解啮合角 α' (Newton-Raphson)
+  var alphaW = alpha * Math.PI / 180; // 初始值
+  for (var iter = 0; iter < 10; iter++) {
+    var f = Math.tan(alphaW) - alphaW - invAlphaW;
+    var df = Math.tan(alphaW) * Math.tan(alphaW);
+    if (Math.abs(df) < 1e-12) break;
+    alphaW = alphaW - f / df;
+  }
+  var alphaWDeg = alphaW * 180 / Math.PI;
+
+  // 实际中心距
+  var a = a0 * cosAlpha / Math.cos(alphaW);
+
+  // 重合度
+  var sinAlphaW = Math.sin(alphaW);
+  var epsilon = (Math.sqrt(ra1*ra1 - rb1*rb1) + Math.sqrt(ra2*ra2 - rb2*rb2) - a * sinAlphaW) / (Math.PI * m * cosAlpha);
+
+  // 滑动率 (小齿轮齿顶与大齿轮齿根)
+  var alphaA1 = Math.acos(rb1 / ra1);
+  var alphaA2 = Math.acos(rb2 / ra2);
+  var tanA1 = Math.tan(alphaA1), tanA2 = Math.tan(alphaA2);
+  var tanAW = Math.tan(alphaW);
+  var u = z2 / z1;
+  var eta1 = (Math.tan(alphaA2) * (1 + u)) / (u * tanAW - tanA2 + u * tanA1); // 简化
+
+  // 小齿轮齿顶滑动率
+  var slid1 = (tanA1 - tanAW) * (1 + u) / (u * tanAW - tanA1);
+  var slid2 = (tanA2 - tanAW) * (1 + 1/u) / (tanAW / u - tanA2);
+
   function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
   var g = gcd(z1, z2);
   var ratioStr = (z2/g) + ':' + (z1/g);
 
-  var html = '<div class="result-section-title">&#9889; 啮合计算结果</div>';
+  var html = '<div class="result-section-title">&#9889; 啮合分析结果</div>';
   html += '<div class="result-grid">';
   html += r('中心距 a', fmt(a), 'mm', true);
+  if (Math.abs(x1) > 0.001 || Math.abs(x2) > 0.001) {
+    html += r('标准中心距 a&#8320;', fmt(a0), 'mm');
+    html += r('啮合角 &alpha;\'', fmt(alphaWDeg,4) + '&deg;', '');
+  }
   html += r('传动比 i', fmt(i), '', true);
-  html += r('小齿轮分度圆 d&#8321;', fmt(d1), 'mm');
-  html += r('大齿轮分度圆 d&#8322;', fmt(d2), 'mm');
-  html += r('小齿轮齿顶圆 da&#8321;', fmt(da1), 'mm');
-  html += r('大齿轮齿顶圆 da&#8322;', fmt(da2), 'mm');
-  html += r('齿距 p', fmt(p), 'mm');
+  html += r('重合度 &epsilon;', fmt(epsilon,3), '', true);
+  html += r('滑动率 &eta;&#8321;', fmt(Math.abs(slid1),3), '');
+  html += r('滑动率 &eta;&#8322;', fmt(Math.abs(slid2),3), '');
+  html += r('小齿轮 d&#8321;', fmt(d1), 'mm');
+  html += r('大齿轮 d&#8322;', fmt(d2), 'mm');
+  html += r('小齿轮 da&#8321;', fmt(da1), 'mm');
+  html += r('大齿轮 da&#8322;', fmt(da2), 'mm');
+  html += r('齿距 p', fmt(Math.PI*m), 'mm');
   html += r('传动比 (约分)', ratioStr, '');
   html += '</div>';
+
+  html += '<p class="formula-hint">重合度 &epsilon; = ' + fmt(epsilon,3) + (epsilon >= 1.2 ? ' &ge; 1.2，啮合连续可靠' : ' < 1.2，啮合不连续！') + '</p>';
 
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
@@ -1106,6 +1237,11 @@ function clearMesh() {
   document.getElementById('mesh-m').value = '';
   document.getElementById('mesh-z1').value = '';
   document.getElementById('mesh-z2').value = '';
+  document.getElementById('mesh-x1').value = '0';
+  document.getElementById('mesh-x2').value = '0';
+  document.getElementById('mesh-alpha').value = '20';
+  document.getElementById('mesh-ha').value = '1';
+  document.getElementById('mesh-c').value = '0.25';
   document.getElementById('mesh-results').classList.remove('show');
 }
 
