@@ -448,25 +448,27 @@
     <div class="form-row">
       <div class="form-group">
         <label>模数 m <span class="unit">(mm)</span></label>
-        <input type="number" id="basic-m" placeholder="例如: 2" step="any" min="0.1">
+        <input type="text" id="basic-m" placeholder="选择或输入" list="modulus-list" autocomplete="off" oninput="debounceCalc()">
+        <datalist id="modulus-list">
+        </datalist>
       </div>
       <div class="form-group">
-        <label>齿数 z</label>
-        <input type="number" id="basic-z" placeholder="例如: 30" min="1" step="1">
+        <label>齿数 z <span class="unit" id="basic-z-warn" style="display:none;color:#e67e22;font-weight:600;"></span></label>
+        <input type="number" id="basic-z" placeholder="例如: 30" min="1" step="1" oninput="debounceCalc()">
       </div>
       <div class="form-group">
         <label>分度圆直径 d <span class="unit">(mm)</span></label>
-        <input type="number" id="basic-d" placeholder="或直接输入 d" step="any" min="0.1">
+        <input type="number" id="basic-d" placeholder="或直接输入 d" step="any" min="0.1" oninput="debounceCalc()">
       </div>
       <div class="form-group">
         <label>变位系数 x</label>
-        <input type="number" id="basic-x" placeholder="例如: 0.3" step="any" value="0">
+        <input type="number" id="basic-x" placeholder="例如: 0.3" step="any" value="0" oninput="debounceCalc()">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>压力角 &alpha;</label>
-        <select id="basic-alpha">
+        <select id="basic-alpha" onchange="debounceCalc()">
           <option value="14.5">14.5&deg;</option>
           <option value="20" selected>20&deg; (标准)</option>
           <option value="25">25&deg;</option>
@@ -474,26 +476,31 @@
       </div>
       <div class="form-group">
         <label>齿顶高系数 ha*</label>
-        <select id="basic-ha">
+        <select id="basic-ha" onchange="debounceCalc()">
           <option value="0.8">0.8 (短齿)</option>
           <option value="1" selected>1.0 (标准)</option>
         </select>
       </div>
       <div class="form-group">
         <label>顶隙系数 c*</label>
-        <select id="basic-c">
+        <select id="basic-c" onchange="debounceCalc()">
           <option value="0.25" selected>0.25 (标准)</option>
           <option value="0.3">0.3</option>
         </select>
       </div>
     </div>
-    <p class="formula-hint">&#128161; 输入任意两个参数即可计算第三个：m+z &rarr; d；d+z &rarr; m；m+d &rarr; z</p>
+    <p class="formula-hint">&#128161; 输入任意两个参数即可计算第三个；修改任意值自动实时更新</p>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="calcBasic()">计算</button>
       <button class="btn btn-outline" onclick="clearBasic()">清空</button>
+      <button class="btn btn-outline" onclick="saveRecord()">&#128190; 保存方案</button>
+      <button class="btn btn-outline" onclick="showHistory()">&#128196; 历史对比</button>
+      <button class="btn btn-outline" onclick="exportCSV()">&#128229; 导出CSV</button>
       <button class="btn btn-print" onclick="window.print()">&#128424; 打印</button>
     </div>
     <div id="basic-results" class="results"></div>
+    <div id="basic-formulas" style="display:none;"></div>
+    <div id="history-panel" class="results" style="display:none;"></div>
   </div>
 
   <!-- ===== Tab 2: 啮合分析 ===== -->
@@ -905,10 +912,29 @@ function closeGuide(e) {
   if (e && e.target !== document.getElementById('guide-overlay')) return;
   document.getElementById('guide-overlay').classList.remove('show');
 }
-// 点 ESC 关闭
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') document.getElementById('guide-overlay').classList.remove('show');
 });
+
+// ==================== 模数标准系列初始化 ====================
+(function initModulusList() {
+  var series = [0.3,0.4,0.5,0.6,0.8,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.5,4,4.5,5,5.5,6,7,8,9,10,11,12,14,16,18,20,22,25,28,32,36,40,45,50];
+  var dl = document.getElementById('modulus-list');
+  series.forEach(function(v) {
+    var opt = document.createElement('option');
+    opt.value = String(v);
+    dl.appendChild(opt);
+  });
+})();
+
+// ==================== Debounce 实时计算 ====================
+var _debounceTimer = null;
+function debounceCalc() {
+  if (_debounceTimer) clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(function() {
+    calcBasic();
+  }, 400);
+}
 
 // ==================== Tab 切换 (修复: 不再依赖全局 event) ====================
 function switchTab(name) {
@@ -1072,6 +1098,16 @@ function calcBasic() {
     return;
   }
 
+  // 根切警告
+  var zWarn = document.getElementById('basic-z-warn');
+  var zMin = Math.floor(2 * haStar / Math.pow(Math.sin(alpha * Math.PI / 180), 2)); // 理论最少齿数
+  if (z < zMin && x <= 0.001) {
+    zWarn.style.display = 'inline';
+    zWarn.textContent = ' \u26a0\uFE0F z<' + zMin + ' 可能根切，建议正变位';
+  } else {
+    zWarn.style.display = 'none';
+  }
+
   d = m * z;
   var cosAlpha = Math.cos(alpha * Math.PI / 180);
   var ha = (haStar + x) * m;
@@ -1108,6 +1144,23 @@ function calcBasic() {
   html += drawGearSVG(m, z, ha, hf, d, alpha);
   html += '</div>';
 
+  // 计算过程公式展示
+  var fDiv = document.getElementById('basic-formulas');
+  var fhtml = '<details style="margin-top:16px;background:#fafbfc;border-radius:8px;border:1px solid var(--border);padding:12px 16px;">';
+  fhtml += '<summary style="cursor:pointer;font-weight:600;color:var(--primary);font-size:13px;">&#128221; 展开计算公式</summary>';
+  fhtml += '<table style="margin-top:10px;font-size:12px;color:var(--text-secondary);width:100%;border-collapse:collapse;">';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">d = m &times; z</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(m) + ' &times; ' + z + ' = <b>' + fmt(d) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">ha = (ha* + x) &times; m</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">(' + haStar + ' + ' + fmt(x,2) + ') &times; ' + fmt(m) + ' = <b>' + fmt(ha) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">hf = (ha* + c* &minus; x) &times; m</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">(' + haStar + ' + ' + cStar + ' &minus; ' + fmt(x,2) + ') &times; ' + fmt(m) + ' = <b>' + fmt(hf) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">da = d + 2ha</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(d) + ' + 2&times;' + fmt(ha) + ' = <b>' + fmt(da) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">df = d &minus; 2hf</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(d) + ' &minus; 2&times;' + fmt(hf) + ' = <b>' + fmt(df) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">db = d &times; cos&alpha;</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(d) + ' &times; cos' + alpha + '&deg; = <b>' + fmt(db) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">p = &pi; &times; m</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">&pi; &times; ' + fmt(m) + ' = <b>' + fmt(p) + ' mm</b></td></tr>';
+  fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">s = &pi;m/2 + 2xm&middot;tan&alpha;</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(Math.PI*m/2) + ' + ' + fmt(2*x*m*Math.tan(alpha*Math.PI/180)) + ' = <b>' + fmt(s) + ' mm</b></td></tr>';
+  fhtml += '</table></details>';
+  fDiv.style.display = 'block';
+  fDiv.innerHTML = fhtml;
+
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
 }
@@ -1121,6 +1174,85 @@ function clearBasic() {
   document.getElementById('basic-ha').value = '1';
   document.getElementById('basic-c').value = '0.25';
   document.getElementById('basic-results').classList.remove('show');
+  document.getElementById('basic-formulas').style.display = 'none';
+}
+
+// ==================== 历史记录 ====================
+var _historyKey = 'gear-calc-history';
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(_historyKey)) || []; } catch(e) { return []; }
+}
+function setHistory(data) {
+  try { localStorage.setItem(_historyKey, JSON.stringify(data)); } catch(e) {}
+}
+
+function saveRecord() {
+  // 从当前结果中提取数据
+  var items = document.querySelectorAll('#basic-results .result-item');
+  if (items.length === 0) { alert('请先计算后再保存'); return; }
+  var rec = { time: new Date().toLocaleString() };
+  items.forEach(function(it) {
+    var label = it.querySelector('.r-label').textContent;
+    var value = it.querySelector('.r-value').textContent;
+    rec[label] = value;
+  });
+  var hist = getHistory();
+  hist.unshift(rec);
+  if (hist.length > 20) hist.pop();
+  setHistory(hist);
+  // 闪烁反馈
+  var panel = document.getElementById('basic-results');
+  panel.style.transition = '0.2s';
+  panel.style.boxShadow = '0 0 0 3px #4A90D9';
+  setTimeout(function() { panel.style.boxShadow = ''; }, 500);
+}
+
+function showHistory() {
+  var hist = getHistory();
+  var panel = document.getElementById('history-panel');
+  if (hist.length === 0) {
+    panel.style.display = 'block';
+    panel.innerHTML = '<p style="color:#8899aa;margin:16px 0;">暂无保存的方案记录</p>';
+    return;
+  }
+  // 取所有记录中的键名
+  var keys = Object.keys(hist[0]).filter(function(k) { return k !== 'time'; });
+  var html = '<div class="result-section-title">&#128196; 历史方案对比 (' + hist.length + '条)</div>';
+  html += '<div style="overflow-x:auto;"><table class="std-table" style="font-size:12px;"><thead><tr><th>时间</th>';
+  keys.forEach(function(k) { html += '<th>' + k + '</th>'; });
+  html += '</tr></thead><tbody>';
+  hist.forEach(function(rec) {
+    html += '<tr><td style="white-space:nowrap;">' + rec.time + '</td>';
+    keys.forEach(function(k) { html += '<td>' + (rec[k]||'-') + '</td>'; });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<button class="btn btn-outline" style="margin-top:12px;font-size:12px;" onclick="clearHistory()">清空历史</button>';
+  html += '<button class="btn btn-outline" style="margin-top:12px;font-size:12px;" onclick="document.getElementById(\'history-panel\').style.display=\'none\'">关闭</button>';
+  panel.style.display = 'block';
+  panel.innerHTML = html;
+}
+
+function clearHistory() {
+  setHistory([]);
+  showHistory();
+}
+
+function exportCSV() {
+  var hist = getHistory();
+  if (hist.length === 0) { alert('没有可导出的记录，请先保存方案'); return; }
+  var keys = Object.keys(hist[0]).filter(function(k) { return k !== 'time'; });
+  var csv = '\uFEFF时间,' + keys.join(',') + '\n';
+  hist.forEach(function(rec) {
+    csv += rec.time + ',' + keys.map(function(k) { return (rec[k]||''); }).join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = '齿轮计算方案_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // 结果项 HTML 生成器
