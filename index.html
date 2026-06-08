@@ -1101,6 +1101,10 @@ function toggleTheme() {
   var btn = document.getElementById('theme-btn');
   btn.textContent = isLight ? '🌙 深色' : '☀️ 浅色';
   try { localStorage.setItem('gear-theme', isLight ? 'light' : 'dark'); } catch(e) {}
+  // 重绘齿轮适配新主题
+  if (document.getElementById('basic-results').classList.contains('show')) {
+    calcBasic();
+  }
 }
 (function initTheme() {
   if (localStorage.getItem('gear-theme') === 'light') {
@@ -1302,7 +1306,7 @@ function drawGearSVG(m, z, ha, hf, d, alpha) {
   svg += '.ref-base{fill:none;stroke:#95a5b4;stroke-dasharray:4,2;stroke-width:0.8;opacity:0.5;}';
   svg += '.dim-line{stroke:#6a6e78;stroke-width:0.8;}';
   svg += '.dim-text{font-size:10px;font-family:sans-serif;fill:#8b8f97;}';
-  svg += '.legend-bg{fill:#1e2128;fill-opacity:0.9;stroke:#3a3d44;stroke-width:0.5;}';
+  svg += '.legend-bg{fill:var(--card-bg);stroke:#3a3d44;stroke-width:0.5;}';
   svg += '</style>';
 
   svg += '<g transform="translate(' + cx + ',' + cy + ')">';
@@ -1346,7 +1350,7 @@ function drawGearSVG(m, z, ha, hf, d, alpha) {
 
   // 中心孔
   var holeR = rS * 0.22;
-  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + fmt(holeR,1) + '" fill="#1a1d23" stroke="#4A90D9" stroke-width="1.5"/>';
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + fmt(holeR,1) + '" fill="none" stroke="#4A90D9" stroke-width="1.5"/>';
 
   // 图例
   svg += '<rect x="6" y="' + (svgSize-72) + '" width="130" height="66" rx="4" class="legend-bg"/>';
