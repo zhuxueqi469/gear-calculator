@@ -6,25 +6,25 @@
 <title>齿轮参数计算器</title>
 <style>
   :root {
-    --primary: #4A90D9;
-    --primary-dark: #3A7BC8;
-    --card-bg: #ffffff;
-    --text: #2c3e50;
-    --text-secondary: #5a6c7d;
-    --border: #e1e8ee;
-    --input-bg: #f7f9fc;
-    --result-bg: #f0f7ff;
-    --warn-bg: #fff9f0;
-    --pass-bg: #f0fff4;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.15);
+    --primary: #5B9BD5;
+    --primary-dark: #4A8AC4;
+    --card-bg: #252830;
+    --text: #c8ccd4;
+    --text-secondary: #8b8f97;
+    --border: #3a3d44;
+    --input-bg: #1e2128;
+    --result-bg: #1e2530;
+    --warn-bg: #2a2520;
+    --pass-bg: #1a2a20;
+    --radius: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    background: #f5f7fa;
+    background: #1a1d23;
     min-height: 100vh;
     color: var(--text);
     line-height: 1.6;
@@ -50,12 +50,12 @@
   .header h1 {
     font-size: 28px;
     font-weight: 600;
-    color: #5BA0D0;
+    color: #7EB8E0;
     letter-spacing: 1px;
   }
   .header .subtitle {
     font-size: 14px;
-    color: #8899aa;
+    color: #6a6e78;
     margin-top: 6px;
   }
 
@@ -63,10 +63,10 @@
   .tabs {
     display: flex;
     gap: 4px;
-    background: #fff;
+    background: #252830;
     border-radius: var(--radius);
     padding: 4px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
     margin-bottom: 24px;
     flex-wrap: wrap;
   }
@@ -78,26 +78,26 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 10px;
-    color: #8899aa;
+    border-radius: 6px;
+    color: #6a6e78;
     transition: all 0.2s;
     border: none;
     background: transparent;
     white-space: nowrap;
   }
-  .tab:hover { color: #5BA0D0; }
+  .tab:hover { color: #8BB8D8; }
   .tab.active {
-    background: #EBF4FA;
-    color: #5BA0D0;
+    background: #2a3545;
+    color: #5B9BD5;
   }
 
   /* 主卡片 */
   .card {
-    background: #fff;
+    background: #252830;
     border-radius: var(--radius);
     padding: 32px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-    border-top: 3px solid #7EC8E3;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+    border-left: 3px solid #5B9BD5;
   }
 
   /* 表单 */
@@ -116,7 +116,7 @@
   .form-group input, .form-group select {
     padding: 10px 14px;
     border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 15px;
     color: var(--text);
     background: var(--input-bg);
@@ -126,9 +126,9 @@
   }
   .form-group input:focus, .form-group select:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(74,144,217,0.12);
+    box-shadow: 0 0 0 3px rgba(91,155,213,0.15);
   }
-  .form-group input::placeholder { color: #bcc4cc; }
+  .form-group input::placeholder { color: #4a4d55; }
 
   .unit {
     font-size: 12px;
@@ -155,7 +155,7 @@
   .btn-primary {
     background: var(--primary);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(74,144,217,0.25);
+    box-shadow: 0 2px 8px rgba(91,155,213,0.3);
   }
   .btn-primary:hover { background: var(--primary-dark); }
   .btn-outline {
@@ -168,11 +168,10 @@
     color: var(--primary);
   }
   .btn-print {
-    background: #6c757d;
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(108,117,125,0.2);
+    background: #3a3d44;
+    color: var(--text-secondary);
   }
-  .btn-print:hover { background: #5a6268; }
+  .btn-print:hover { background: #4a4d55; color: var(--text); }
 
   /* 结果区 */
   .results {
@@ -187,7 +186,7 @@
     color: var(--primary);
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 2px solid #e8f0f8;
+    border-bottom: 2px solid #2a3545;
   }
 
   .result-grid {
@@ -199,8 +198,8 @@
   .result-item {
     background: var(--result-bg);
     padding: 14px 16px;
-    border-radius: 8px;
-    border: 1px solid #dce8f4;
+    border-radius: 6px;
+    border: 1px solid #2a3040;
   }
   .result-item .r-label {
     font-size: 12px;
@@ -211,15 +210,17 @@
     font-size: 20px;
     font-weight: 600;
     color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', 'Menlo', monospace;
   }
   .result-item .r-unit {
     font-size: 12px;
     color: var(--text-secondary);
     margin-left: 2px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
   }
   .result-item.highlight {
-    background: #e8f4fd;
-    border-color: #b8d8f0;
+    background: #1e2a3a;
+    border-color: #2a4a6a;
   }
   .result-item.highlight .r-value {
     color: var(--primary);
@@ -235,31 +236,30 @@
   }
   .check-result.pass {
     background: var(--pass-bg);
-    border: 1px solid #b7ebc8;
+    border: 1px solid #1a3a20;
   }
   .check-result.fail {
-    background: #fff5f5;
-    border: 1px solid #fcc;
+    background: #2a1a1a;
+    border: 1px solid #4a2020;
   }
   .check-result .val { font-weight: 600; }
-  .check-result .pass-val { color: #27ae60; }
-  .check-result .fail-val { color: #e74c3c; }
+  .check-result .pass-val { color: #4dba6a; }
+  .check-result .fail-val { color: #e05555; }
 
   /* SVG 齿轮图 */
   .gear-visual {
     text-align: center;
     margin-top: 24px;
     padding: 16px;
-    background: #fafbfc;
+    background: #1e2128;
     border-radius: 8px;
     border: 1px solid var(--border);
   }
-  .gear-visual svg { max-width: 300px; }
 
   /* 公式提示 */
   .formula-hint {
     font-size: 12px;
-    color: #95a5b4;
+    color: #6a6e78;
     margin-top: 4px;
     font-style: italic;
   }
@@ -284,6 +284,9 @@
   }
   .std-table tr:nth-child(odd) td {
     background: var(--input-bg);
+  }
+  .std-table tr:nth-child(even) td {
+    background: #22252d;
   }
 
   /* 材料卡片 */
@@ -315,26 +318,26 @@
     top: 20px;
     right: 24px;
     z-index: 100;
-    background: #fff;
+    background: #252830;
     color: var(--primary);
-    border: 1.5px solid #7EC8E3;
-    border-radius: 8px;
+    border: 1.5px solid #3a5a7a;
+    border-radius: 6px;
     padding: 8px 18px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(74,144,217,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   }
-  .guide-btn:hover { background: #EBF4FA; }
+  .guide-btn:hover { background: #2a3545; }
 
   /* 教程遮罩 */
   .guide-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.35);
+    background: rgba(0,0,0,0.6);
     z-index: 200;
     align-items: center;
     justify-content: center;
@@ -342,15 +345,16 @@
   .guide-overlay.show { display: flex; }
 
   .guide-panel {
-    background: #fff;
+    background: #252830;
     border-radius: var(--radius);
     padding: 32px 36px;
     max-width: 560px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     position: relative;
+    color: var(--text);
   }
   .guide-panel h2 {
     font-size: 18px;
@@ -371,7 +375,7 @@
   }
   .guide-panel ul { padding-left: 20px; }
   .guide-panel .tip {
-    background: var(--result-bg);
+    background: #1e2530;
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
@@ -384,18 +388,21 @@
     background: none;
     border: none;
     font-size: 22px;
-    color: #8899aa;
+    color: #6a6e78;
     cursor: pointer;
     line-height: 1;
   }
   .guide-close:hover { color: var(--text); }
 
   @media print {
-    body { background: #fff; }
-    .tabs, .btn-row, #bg-canvas, .bg-glow, .footer { display: none !important; }
-    .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    body { background: #fff; color: #000; }
+    .tabs, .btn-row, #bg-canvas, .bg-glow, .footer, .guide-btn { display: none !important; }
+    .card { background: #fff; box-shadow: none; border: 1px solid #ccc; break-inside: avoid; color: #000; }
     .container { max-width: 100%; padding: 0; }
     .header h1 { color: #000; }
+    .result-item { background: #fff; border: 1px solid #ddd; }
+    .result-item .r-value { color: #000; }
+    .result-item .r-label { color: #555; }
   }
 
   /* Footer */
@@ -403,7 +410,7 @@
     text-align: center;
     margin-top: 40px;
     font-size: 12px;
-    color: #aabbcc;
+    color: #4a4d55;
     position: relative;
     z-index: 1;
   }
