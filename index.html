@@ -20,6 +20,37 @@
     --shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
 
+  /* 浅色模式 */
+  body.light {
+    --primary: #2563EB;
+    --primary-dark: #1D4ED8;
+    --card-bg: #FFFFFF;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --border: #E2E8F0;
+    --input-bg: #F8FAFC;
+    --result-bg: #F1F5F9;
+    --warn-bg: #FEF3C7;
+    --pass-bg: #ECFDF5;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background: #F8FAFC;
+  }
+  body.light .card { border-left: 3px solid #2563EB; }
+  body.light .header h1 { color: #1E40AF; }
+  body.light .header .subtitle { color: #64748B; }
+  body.light .tabs { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  body.light .tab.active { background: #EFF6FF; color: #2563EB; }
+  body.light .tab { color: #64748B; }
+  body.light .tab:hover { color: #2563EB; }
+  body.light .footer { color: #94A3B8; }
+  body.light .gear-visual { background: #F8FAFC; }
+  body.light .check-result.pass { background: #ECFDF5; border-color: #A7F3D0; }
+  body.light .check-result.fail { background: #FEF2F2; border-color: #FECACA; }
+  body.light .check-result .pass-val { color: #059669; }
+  body.light .check-result .fail-val { color: #DC2626; }
+  body.light .result-item.highlight { background: #EFF6FF; border-color: #BFDBFE; }
+  body.light .result-item.highlight .r-value { color: #2563EB; }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -470,6 +501,7 @@
   <!-- Header -->
   <div class="header">
     <h1>&#9881;&#65039; 齿轮参数计算器 <span style="font-size:14px;color:#e67e22;">[v3-修复版]</span></h1>
+    <button onclick="toggleTheme()" style="position:fixed;top:20px;right:120px;z-index:100;background:var(--card-bg);color:var(--text);border:1.5px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;" id="theme-btn">☀️ 浅色</button>
     <p class="subtitle">渐开线标准直齿圆柱齿轮 &nbsp;|&nbsp; GB/T 1357-2008 &nbsp;|&nbsp; 参数计算 · 啮合分析 · 强度校核</p>
   </div>
 
@@ -1017,6 +1049,20 @@ function debounceCalc() {
     calcBasic();
   }, 400);
 }
+
+// ==================== 主题切换 ====================
+function toggleTheme() {
+  var isLight = document.body.classList.toggle('light');
+  var btn = document.getElementById('theme-btn');
+  btn.textContent = isLight ? '🌙 深色' : '☀️ 浅色';
+  try { localStorage.setItem('gear-theme', isLight ? 'light' : 'dark'); } catch(e) {}
+}
+(function initTheme() {
+  if (localStorage.getItem('gear-theme') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-btn').textContent = '🌙 深色';
+  }
+})();
 
 // ==================== 步进器 ====================
 function stepZ(delta) {
