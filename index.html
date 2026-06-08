@@ -1554,7 +1554,7 @@ function calcMesh() {
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
   // 启动啮合动画
-  startMeshAnimation(m, z1, z2, x1, x2, haStar, cStar, alpha, d1, d2, da1, da2, db1, db2, a);
+  startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, epsilon);
 }
 
 function clearMesh() {
@@ -1570,7 +1570,7 @@ function clearMesh() {
   stopMeshAnimation();
 }
 
-// ==================== 啮合动画 Canvas ====================
+// ==================== 啮合动画 Canvas (精确啮合分析) ====================
 var _meshAnimId = null;
 
 function stopMeshAnimation() {
@@ -1579,36 +1579,88 @@ function stopMeshAnimation() {
   if (c) c.style.display = 'none';
 }
 
-function startMeshAnimation(m, z1, z2, x1, x2, haStar, cStar, alpha, d1, d2, da1, da2, db1, db2, a) {
+function startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, epsilon) {
   stopMeshAnimation();
   var canvas = document.getElementById('mesh-canvas');
   var ctx = canvas.getContext('2d');
   canvas.style.display = 'block';
 
   var W = canvas.width, H = canvas.height;
+  var alphaRad = alpha * Math.PI / 180;
   var ra1 = da1 / 2, ra2 = da2 / 2;
   var r1 = d1 / 2, r2 = d2 / 2;
   var rb1 = db1 / 2, rb2 = db2 / 2;
 
-  // 缩放使两个齿轮都可见
-  var pitchX = W * 0.38; // pitch point x
-  var pitchY = H / 2;
-  var scale = (W * 0.32) / Math.max(ra1, ra2);
-  var sc = function(v) { return v * scale; };
+  // 以节点P为坐标原点(画布中心)
+  var Px = W / 2, Py = H / 2;
 
-  var sr1 = sc(r1), sr2 = sc(r2);
-  var sra1 = sc(ra1), sra2 = sc(ra2);
-  var srb1 = sc(rb1), srb2 = sc(rb2);
+  // 缩放：使两个齿轮齿顶圆都可见
+  var maxR = Math.max(ra1 + a/2, ra2 + a/2);
+  var scale = (W * 0.38) / maxR;
 
-  // 齿轮中心位置
-  var cx1 = pitchX - sr1, cy1 = pitchY;
-  var cx2 = pitchX + sr2, cy2 = pitchY;
+  // 齿轮中心：O1在P左侧a/2处, O2在P右侧a/2处
+  var aS = a * scale;
+  var cx1 = Px - aS / 2, cy1 = Py;
+  var cx2 = Px + aS / 2, cy2 = Py;
 
+  var sr1 = r1 * scale, sr2 = r2 * scale;
+  var sra1 = ra1 * scale, sra2 = ra2 * scale;
+  var srb1 = rb1 * scale, srb2 = rb2 * scale;
+
+  // 初始相位(按规范：齿轮1齿中心线指向右(0), 齿轮2齿槽中心线指向左(π))
+  var phase1 = 0;
+  var phase2 = Math.PI / z2 + (z2 % 2 === 0 ? Math.PI / z2 : 0);
   var angle = 0;
-  var toothAngle1 = 2 * Math.PI / z1;
-  var toothAngle2 = 2 * Math.PI / z2;
 
-  function drawToothMarks(cx, cy, rOuter, rInner, z, baseAngle, toothW) {
+  // 基圆齿距
+  var pb = Math.PI * m * Math.cos(alphaRad);
+
+  // N1, N2: 啮合线与基圆的切点(在各自齿轮坐标系)
+  // 啮合线方向角 = 90°+α
+  var meshDir = Math.PI / 2 + alphaRad;
+  // N1: O1 + rb1 * (cos(meshDir), sin(meshDir))  … 不对，N1是基圆上切点
+  // 啮合线是两基圆的内公切线，方向角 meshDir = π/2 + α
+  // 从P到N1沿啮合线方向距离 = rb1 * tan(α) (因为PN1 = rb1·tan(α))
+  var PN1 = rb1 * Math.tan(alphaRad);
+  var PN2 = rb2 * Math.tan(alphaRad);
+  // N1在P左上方(沿啮合线反方向)
+  var N1x = Px - PN1 * Math.cos(alphaRad) * scale;
+  var N1y = Py + PN1 * Math.sin(alphaRad) * scale;
+  var N2x = Px + PN2 * Math.cos(alphaRad) * scale;
+  var N2y = Py - PN2 * Math.sin(alphaRad) * scale;
+
+  // B1, B2: 齿顶圆与啮合线的交点
+  // B1 在啮合线上满足到O1距离=ra1, B1N2 = √(ra1²-rb1²) - PN1·tanα... 简化：
+  // 用几何法求圆与直线交点
+  function findIntersectionLineCircle(px, py, dx, dy, cx, cy, R) {
+    var a = dx*dx + dy*dy;
+    var b = 2*dx*(px-cx) + 2*dy*(py-cy);
+    var c = (px-cx)*(px-cx) + (py-cy)*(py-cy) - R*R;
+    var disc = b*b - 4*a*c;
+    if (disc < 0) return [{x:px, y:py}, {x:px, y:py}];
+    var t1 = (-b + Math.sqrt(disc))/(2*a);
+    var t2 = (-b - Math.sqrt(disc))/(2*a);
+    return [
+      {x: px + t1*dx, y: py + t1*dy},
+      {x: px + t2*dx, y: py + t2*dy}
+    ];
+  }
+
+  // 啮合线方向向量(从N1到N2)
+  var meshX = Math.cos(alphaRad), meshY = -Math.sin(alphaRad);
+  // B1: 齿轮1齿顶圆 ra1 与啮合线的交点(取靠近N2的那个)
+  var hits1 = findIntersectionLineCircle(N1x/scale, N1y/scale, meshX, meshY, cx1/scale, cy1/scale, ra1);
+  var B1 = hits1[0]; // 取t>0的那个(沿啮合线前进)
+
+  // B2: 齿轮2齿顶圆 ra2 与啮合线的交点(取靠近N1的那个)
+  var hits2 = findIntersectionLineCircle(N2x/scale, N2y/scale, -meshX, -meshY, cx2/scale, cy2/scale, ra2);
+  var B2 = hits2[0];
+
+  var B1x = B1.x * scale, B1y = B1.y * scale;
+  var B2x = B2.x * scale, B2y = B2.y * scale;
+
+  function drawToothMarks(cx, cy, rOuter, rInner, z, baseAngle, toothW, fillColor) {
+    ctx.fillStyle = fillColor;
     for (var i = 0; i < z; i++) {
       var a = baseAngle + i * (2 * Math.PI / z);
       var a1 = a - toothW / 2;
@@ -1627,150 +1679,114 @@ function startMeshAnimation(m, z1, z2, x1, x2, haStar, cStar, alpha, d1, d2, da1
   function draw() {
     ctx.clearRect(0, 0, W, H);
 
-    // 标题
-    ctx.fillStyle = '#5a6c7d';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('啮合示意图', 10, 18);
+    // 背景网格(工程图风格)
+    ctx.strokeStyle = 'rgba(58,61,68,0.3)';
+    ctx.lineWidth = 0.5;
+    for (var gx = 0; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+    for (var gy = 0; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
 
-    // 啮合线 (从两基圆公切线过节点)
-    var pressureAngle = alpha * Math.PI / 180;
-    var sinPA = Math.sin(pressureAngle);
-    var cosPA = Math.cos(pressureAngle);
-
-    // 啮合线方向
-    var lineDX = sinPA, lineDY = cosPA;
-    var lineLen = W;
-    var lx1 = pitchX - lineDX * lineLen;
-    var ly1 = pitchY + lineDY * lineLen;
-    var lx2 = pitchX + lineDX * lineLen;
-    var ly2 = pitchY - lineDY * lineLen;
-
-    ctx.strokeStyle = 'rgba(231,76,60,0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 4]);
-    ctx.beginPath();
-    ctx.moveTo(lx1, ly1);
-    ctx.lineTo(lx2, ly2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 基圆切线标记
-    ctx.fillStyle = '#e74c3c';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('啮合线', lx1 + 5, ly1 - 4);
-
-    // 绘制齿轮1 (小齿轮, 蓝色, 顺时针)
-    ctx.save();
-    // 齿轮1实体
-    ctx.fillStyle = 'rgba(74,144,217,0.12)';
-    ctx.strokeStyle = '#4A90D9';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(cx1, cy1, sra1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // 齿形
-    ctx.fillStyle = 'rgba(74,144,217,0.25)';
-    drawToothMarks(cx1, cy1, sra1, sc(r1 * 0.9), z1, angle, toothAngle1 * 0.5);
-
-    // 分度圆
-    ctx.strokeStyle = '#4A90D9';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.arc(cx1, cy1, sr1, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 基圆
-    ctx.strokeStyle = 'rgba(149,165,180,0.5)';
-    ctx.lineWidth = 0.8;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.arc(cx1, cy1, srb1, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 标签
-    ctx.fillStyle = '#4A90D9';
+    ctx.fillStyle = '#8b8f97';
     ctx.font = '11px sans-serif';
-    ctx.fillText('z₁=' + z1, cx1 - 18, cy1 - sra1 - 8);
-    ctx.restore();
+    ctx.fillText('啮合分析动画  z₁=' + z1 + '  z₂=' + z2 + '  a=' + fmt(a) + 'mm', 10, 18);
 
-    // 绘制齿轮2 (大齿轮, 绿色, 逆时针)
-    ctx.save();
-    ctx.fillStyle = 'rgba(39,174,96,0.12)';
-    ctx.strokeStyle = '#27ae60';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(cx2, cy2, sra2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // 齿形 (反向旋转)
-    ctx.fillStyle = 'rgba(39,174,96,0.25)';
-    drawToothMarks(cx2, cy2, sra2, sc(r2 * 0.9), z2, -angle * z1 / z2 + Math.PI / z2, toothAngle2 * 0.5);
-
-    // 分度圆
-    ctx.strokeStyle = '#27ae60';
+    // === 啮合线 N1N2 (灰色虚线) ===
+    ctx.strokeStyle = 'rgba(149,165,180,0.6)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
+    ctx.setLineDash([6, 3]);
     ctx.beginPath();
-    ctx.arc(cx2, cy2, sr2, 0, Math.PI * 2);
+    ctx.moveTo(N1x, N1y);
+    ctx.lineTo(N2x, N2y);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 基圆
-    ctx.strokeStyle = 'rgba(149,165,180,0.5)';
-    ctx.lineWidth = 0.8;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.arc(cx2, cy2, srb2, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // N1, N2 标记点
+    ctx.fillStyle = '#95a5b4';
+    ctx.beginPath(); ctx.arc(N1x, N1y, 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('N₁', N1x - 16, N1y + 14);
+    ctx.beginPath(); ctx.arc(N2x, N2y, 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('N₂', N2x + 5, N2y - 6);
 
+    // === 实际啮合线段 B1B2 (绿色实线) ===
+    ctx.strokeStyle = '#27ae60';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(B1x, B1y);
+    ctx.lineTo(B2x, B2y);
+    ctx.stroke();
+
+    // B1, B2 标记
     ctx.fillStyle = '#27ae60';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('z₂=' + z2, cx2 - 18, cy2 - sra2 - 8);
-    ctx.restore();
+    ctx.beginPath(); ctx.arc(B1x, B1y, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('B₁', B1x - 20, B1y + 6);
+    ctx.beginPath(); ctx.arc(B2x, B2y, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('B₂', B2x + 5, B2y - 4);
 
-    // 节点
+    // === 动态接触点(红色,沿B1B2移动) ===
+    var contactFrac = (angle % (2*Math.PI/z1)) / (2*Math.PI/z1);
+    var cpX = B1x + (B2x - B1x) * contactFrac;
+    var cpY = B1y + (B2y - B1y) * contactFrac;
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
-    ctx.arc(pitchX, pitchY, 4, 0, Math.PI * 2);
+    ctx.arc(cpX, cpY, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // === 齿轮1 (蓝色, 左侧, 顺时针) ===
+    // 外圆
+    ctx.fillStyle = 'rgba(91,155,213,0.08)';
+    ctx.strokeStyle = '#5B9BD5';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx1, cy1, sra1, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // 齿形
+    drawToothMarks(cx1, cy1, sra1, r1*0.88*scale, z1, angle+phase1, (2*Math.PI/z1)*0.5, 'rgba(91,155,213,0.3)');
+    // 分度圆
+    ctx.strokeStyle = '#5B9BD5'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(cx1, cy1, sr1, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    // 基圆
+    ctx.strokeStyle = 'rgba(149,165,180,0.5)'; ctx.lineWidth = 0.8; ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.arc(cx1, cy1, srb1, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#5B9BD5'; ctx.font = '11px sans-serif';
+    ctx.fillText('z₁=' + z1, cx1 - 15, cy1 - sra1 - 6);
+
+    // === 齿轮2 (绿色, 右侧, 逆时针) ===
+    ctx.fillStyle = 'rgba(39,174,96,0.08)';
+    ctx.strokeStyle = '#27ae60';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx2, cy2, sra2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // 齿形(反向旋转+初始相位)
+    var angle2 = -angle * z1/z2 + phase2;
+    drawToothMarks(cx2, cy2, sra2, r2*0.88*scale, z2, angle2, (2*Math.PI/z2)*0.5, 'rgba(39,174,96,0.3)');
+    // 分度圆
+    ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(cx2, cy2, sr2, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    // 基圆
+    ctx.strokeStyle = 'rgba(149,165,180,0.5)'; ctx.lineWidth = 0.8; ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.arc(cx2, cy2, srb2, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#27ae60'; ctx.font = '11px sans-serif';
+    ctx.fillText('z₂=' + z2, cx2 - 15, cy2 - sra2 - 6);
+
+    // === 节点 P ===
     ctx.fillStyle = '#e74c3c';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('节点', pitchX + 8, pitchY + 14);
+    ctx.beginPath(); ctx.arc(Px, Py, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('P', Px + 8, Py + 14);
 
-    // 中心距标注
-    ctx.strokeStyle = '#8899aa';
-    ctx.lineWidth = 0.8;
-    ctx.setLineDash([3, 2]);
-    ctx.beginPath();
-    ctx.moveTo(cx1, cy1 + sra1 + 15);
-    ctx.lineTo(cx2, cy2 + sra2 + 15);
-    ctx.stroke();
+    // === 中心距标注 ===
+    var lineY = cy1 + Math.max(sra1, sra2) + 18;
+    ctx.strokeStyle = '#5a6c7d'; ctx.lineWidth = 0.8; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(cx1, lineY); ctx.lineTo(cx2, lineY); ctx.stroke();
     ctx.setLineDash([]);
-    // 箭头
-    ctx.beginPath();
-    ctx.moveTo(cx2, cy2 + sra2 + 15);
-    ctx.lineTo(cx2 - 6, cy2 + sra2 + 11);
-    ctx.moveTo(cx2, cy2 + sra2 + 15);
-    ctx.lineTo(cx2 - 6, cy2 + sra2 + 19);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx1, cy1 + sra1 + 15);
-    ctx.lineTo(cx1 + 6, cy1 + sra1 + 11);
-    ctx.moveTo(cx1, cy1 + sra1 + 15);
-    ctx.lineTo(cx1 + 6, cy1 + sra1 + 19);
-    ctx.stroke();
-    ctx.fillStyle = '#5a6c7d';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('a=' + fmt(a), (cx1+cx2)/2 - 20, cy1 + sra1 + 28);
+    ctx.fillStyle = '#8b8f97'; ctx.font = '10px sans-serif';
+    ctx.fillText('a=' + fmt(a) + 'mm', (cx1+cx2)/2 - 25, lineY + 16);
 
-    angle += 0.03;
+    // === 重合度标签 ===
+    ctx.fillStyle = '#27ae60';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('ε = ' + fmt(epsilon, 3), B2x + 12, B2y + 24);
+
+    angle += 0.025;
     _meshAnimId = requestAnimationFrame(draw);
   }
 
