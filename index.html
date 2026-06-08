@@ -481,14 +481,46 @@
   }
   .tooltip-popup.show { display: block; }
 
-  /* 响应式 */
-  @media (max-width: 600px) {
-    .container { padding: 20px 12px; }
-    .card { padding: 20px 16px; }
-    .tabs { flex-wrap: wrap; }
-    .tab { font-size: 13px; padding: 10px 12px; flex: unset; }
-    .form-row { grid-template-columns: 1fr; }
-    .result-grid, .material-grid { grid-template-columns: repeat(2, 1fr); }
+  /* 响应式 - 手机端适配 */
+  @media (max-width: 768px) {
+    .container { padding: 16px 8px; }
+    .card { padding: 16px 12px; }
+    .header h1 { font-size: 22px; }
+    .header .subtitle { font-size: 12px; }
+    .tabs { flex-wrap: wrap; gap: 2px; }
+    .tab { font-size: 12px; padding: 8px 10px; flex: unset; border-radius: 6px; }
+    .form-row { grid-template-columns: 1fr; gap: 12px; }
+    .form-group input, .form-group select { font-size: 14px; padding: 8px 10px; }
+    .result-grid, .material-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .result-item { padding: 10px 12px; }
+    .result-item .r-value { font-size: 16px; }
+    .btn { padding: 8px 16px; font-size: 13px; }
+    .btn-row { gap: 6px; }
+
+    /* 表格横向滚动 */
+    .std-table { font-size: 11px; }
+    .std-table td, .std-table th { padding: 4px 6px; white-space: nowrap; }
+    .card { overflow-x: auto; }
+
+    /* 齿轮图缩放 */
+    .gear-visual svg { max-width: 280px; height: auto; }
+
+    /* 啮合动画 canvas */
+    #mesh-canvas { width: 100% !important; height: auto !important; }
+
+    /* 教程按钮缩小 */
+    .guide-btn { width: 36px; height: 36px; font-size: 14px; bottom: 16px; right: 16px; }
+    .guide-panel { padding: 20px; }
+
+    /* 历史面板 */
+    #history-panel .std-table { display: block; overflow-x: auto; }
+  }
+
+  @media (max-width: 400px) {
+    .tab { font-size: 11px; padding: 6px 8px; }
+    .result-grid, .material-grid { grid-template-columns: 1fr; }
+    .gear-visual svg { max-width: 240px; }
+    .header h1 { font-size: 19px; }
   }
 </style>
 </head>
