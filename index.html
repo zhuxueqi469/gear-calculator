@@ -577,6 +577,109 @@
   .hide-root .ref-root { display: none; }
   .hide-base .ref-base { display: none; }
 
+  /* === 状态徽章 === */
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+  .badge-ok { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+  .badge-warn { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+  .badge-err { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+  .badge-info { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+
+  /* === 可展开结果卡片 === */
+  .result-card {
+    background: var(--result-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .result-card:hover { border-color: #BFDBFE; }
+  .result-card .rc-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .result-card .rc-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 70px;
+  }
+  .result-card .rc-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  }
+  .result-card .rc-unit {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+    margin-left: 2px;
+  }
+  .result-card .rc-copy {
+    opacity: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .result-card:hover .rc-copy { opacity: 1; }
+  .result-card .rc-copy:hover { background: #E2E8F0; color: var(--text); }
+  .result-card.highlight { background: #EFF6FF; border-color: #BFDBFE; }
+  .result-card.highlight .rc-value { color: var(--primary); }
+  .result-card .rc-formula {
+    display: none;
+    padding: 0 12px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Consolas', monospace;
+    border-top: 1px dashed var(--border);
+  }
+  .result-card.expanded .rc-formula { display: block; }
+
+  /* === 动画控制 === */
+  .anim-controls {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .anim-controls.show { display: flex; }
+  .anim-controls button {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .anim-controls button:hover { background: #F1F5F9; }
+  .anim-controls button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .anim-controls input[type=range] { width: 80px; }
+
   /* === 响应式 === */
   @media (max-width: 1024px) {
     .app-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; overflow: visible; }
@@ -792,6 +895,14 @@
       <p style="color:var(--text-secondary);font-size:13px;">在左侧输入参数并点击计算，齿轮将在此显示</p>
     </div>
     <canvas id="mesh-canvas" width="600" height="350" style="display:none;"></canvas>
+    <div class="anim-controls" id="anim-controls">
+      <button onclick="animPlay()" id="btn-play">▶ 播放</button>
+      <button onclick="animPause()" id="btn-pause">⏸ 暂停</button>
+      <button onclick="animStop()">⏹ 停止</button>
+      <span style="font-size:11px;color:var(--text-secondary);">速度</span>
+      <input type="range" id="anim-speed" min="0.25" max="2" step="0.25" value="1" oninput="animSetSpeed(this.value)" style="width:80px;">
+      <span style="font-size:11px;color:var(--text-secondary);min-width:30px;" id="speed-label">1x</span>
+    </div>
     <div id="basic-formulas" class="formula-panel" style="display:none;"></div>
     <div id="history-panel" style="display:none;"></div>
   </div>
@@ -799,6 +910,7 @@
   <!-- 右栏：结果 -->
   <div class="panel-right" id="panel-right">
     <div class="section-title">计算结果</div>
+    <div class="badge-row" id="badge-row"></div>
     <div id="basic-results" class="results">
       <p style="color:var(--text-secondary);font-size:13px;">请在左侧输入参数后点击计算</p>
     </div>
@@ -1132,6 +1244,58 @@ function toggleLayer(layer, btn) {
   }
 }
 
+// ==================== 状态徽章 ====================
+function updateBadges(m, z, x, alpha, haStar, cStar) {
+  var row = document.getElementById('badge-row');
+  var badges = [];
+  // 标准齿轮判定
+  if (Math.abs(x) < 0.001 && alpha === 20 && haStar === 1 && cStar === 0.25) {
+    badges.push('<span class="badge badge-ok">✓ 标准齿轮</span>');
+  } else if (Math.abs(x) > 0.001) {
+    badges.push('<span class="badge badge-info">变位 x=' + fmt(x,2) + '</span>');
+  }
+  if (alpha !== 20) badges.push('<span class="badge badge-info">α=' + alpha + '°</span>');
+  
+  // 根切判定
+  var alphaRad = alpha * Math.PI / 180;
+  var zMin = Math.ceil(2 * haStar / Math.pow(Math.sin(alphaRad), 2));
+  if (z < zMin && x < 0.001) {
+    var reqX = haStar * (zMin - z) / zMin;
+    badges.push('<span class="badge badge-err">⚠ 根切！建议x≥' + fmt(reqX,3) + '</span>');
+  } else {
+    badges.push('<span class="badge badge-ok">✓ 无根切</span>');
+  }
+  row.innerHTML = badges.join('');
+}
+
+// ==================== 动画控制 ====================
+var _animSpeed = 1;
+var _animPaused = false;
+var _animBaseIncrement = 0.025;
+
+function animPlay() {
+  _animPaused = false;
+  document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+}
+function animPause() {
+  _animPaused = true;
+  document.getElementById('btn-play').classList.remove('active');
+  document.getElementById('btn-pause').classList.add('active');
+}
+function animStop() {
+  _animPaused = true;
+  // Reset animation - re-trigger calc to restart
+  document.getElementById('btn-play').classList.remove('active');
+  document.getElementById('btn-pause').classList.remove('active');
+  calcMesh();
+}
+function animSetSpeed(v) {
+  _animSpeed = parseFloat(v);
+  document.getElementById('speed-label').textContent = v + 'x';
+}
+
+// ==================== Tab 切换 (药丸导航) ====================
 // ==================== Tab 切换 (药丸导航) ====================
 // ==================== Tab 切换 (药丸导航) ====================
 function switchTab(name) {
@@ -1486,6 +1650,10 @@ function calcBasic() {
   fDiv.style.display = 'block';
   fDiv.innerHTML = fhtml;
 
+  // 更新状态徽章
+  updateBadges(m, z, x, alpha, haStar, cStar);
+  resultsDiv.innerHTML = html;
+  resultsDiv.classList.add('show');
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
 }
@@ -1586,10 +1754,41 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-// 结果项 HTML 生成器
-function r(label, value, unit, hl) {
-  var cls = hl ? ' result-item highlight' : ' result-item';
-  return '<div class="' + cls + '"><div class="r-label">' + label + '</div><div class="r-value">' + value + '<span class="r-unit">' + unit + '</span></div></div>';
+// 结果卡片 HTML 生成器（可展开+复制）
+var _formulaMap = {
+  '模数 m': 'm = d/z',
+  '齿数 z': 'z = d/m',
+  '分度圆直径 d': 'd = m × z',
+  '齿顶圆直径 da': 'da = d + 2(ha*+x)m',
+  '齿根圆直径 df': 'df = d - 2(ha*+c*-x)m',
+  '基圆直径 db': 'db = d × cosα',
+  '齿距 p': 'p = π × m',
+  '齿厚 s': 's = πm/2 + 2xm·tanα',
+  '齿槽宽 e': 'e = πm/2 - 2xm·tanα',
+  '齿顶高 ha': 'ha = (ha* + x)m',
+  '齿根高 hf': 'hf = (ha* + c* - x)m',
+  '全齿高 h': 'h = ha + hf',
+  '中心距 a': 'a = m(z₁+z₂)/2',
+  '传动比 i': 'i = z₂/z₁'
+};
+function r(label, value, unit, hl, formula) {
+  var cls = hl ? ' result-card highlight' : ' result-card';
+  var ftext = formula || (_formulaMap[label] || '');
+  return '<div class="' + cls + '" onclick="this.classList.toggle('expanded')">' +
+    '<div class="rc-main">' +
+      '<span class="rc-label">' + label + '</span>' +
+      '<span style="flex:1;"></span>' +
+      '<span class="rc-value">' + value + '<span class="rc-unit">' + unit + '</span></span>' +
+      '<span class="rc-copy" onclick="event.stopPropagation();copyValue('' + value.replace(/'/g, "\'") + '')" title="复制">📋</span>' +
+    '</div>' +
+    (ftext ? '<div class="rc-formula">' + ftext + '</div>' : '') +
+  '</div>';
+}
+function copyValue(val) {
+  var clean = val.replace(/<[^>]*>/g, '').trim();
+  navigator.clipboard.writeText(clean).then(function() {
+    // brief visual feedback handled by hover state
+  }).catch(function(){});
 }
 
 // ==================== Tab 2: 啮合分析 ====================
@@ -1692,6 +1891,10 @@ function calcMesh() {
 
   html += '<p class="formula-hint">重合度 &epsilon; = ' + fmt(epsilon,3) + (epsilon >= 1.2 ? ' &ge; 1.2，啮合连续可靠' : ' < 1.2，啮合不连续！') + '</p>';
 
+  // 更新状态徽章
+  updateBadges(m, z, x, alpha, haStar, cStar);
+  resultsDiv.innerHTML = html;
+  resultsDiv.classList.add('show');
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
   // 启动啮合动画
@@ -1718,6 +1921,8 @@ function stopMeshAnimation() {
   if (_meshAnimId) { cancelAnimationFrame(_meshAnimId); _meshAnimId = null; }
   var c = document.getElementById('mesh-canvas');
   if (c) c.style.display = 'none';
+  var ctrls = document.getElementById('anim-controls');
+  if (ctrls) ctrls.classList.remove('show');
 }
 
 function startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, epsilon) {
@@ -1752,6 +1957,14 @@ function startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, eps
   var phase1 = 0;
   var phase2 = Math.PI / z2 + (z2 % 2 === 0 ? Math.PI / z2 : 0);
   var angle = 0;
+  // 显示动画控制栏
+  var ctrls = document.getElementById('anim-controls');
+  if (ctrls) ctrls.classList.add('show');
+  document.getElementById('btn-play').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
+  _animPaused = false;
+  _animSpeed = 1;
+  document.getElementById('speed-label').textContent = '1x';
 
   // 基圆齿距
   var pb = Math.PI * m * Math.cos(alphaRad);
@@ -1927,7 +2140,7 @@ function startMeshAnimation(m, z1, z2, d1, d2, da1, da2, db1, db2, a, alpha, eps
     ctx.font = 'bold 12px monospace';
     ctx.fillText('ε = ' + fmt(epsilon, 3), B2x + 12, B2y + 24);
 
-    angle += 0.025;
+    if (!_animPaused) angle += _animBaseIncrement * _animSpeed;
     _meshAnimId = requestAnimationFrame(draw);
   }
 
@@ -1966,6 +2179,10 @@ function calcPower() {
   html += '</div>';
   html += '<p class="formula-hint">P = T &times; n / 9550 &nbsp;|&nbsp; T = 9550 &times; P / n</p>';
 
+  // 更新状态徽章
+  updateBadges(m, z, x, alpha, haStar, cStar);
+  resultsDiv.innerHTML = html;
+  resultsDiv.classList.add('show');
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
 }
@@ -2103,6 +2320,10 @@ function calcStrength() {
 
   html += '<p class="formula-hint" style="margin-top:12px;">校核依据 GB/T 3480 简化方法。K = K<sub>A</sub>&#183;K<sub>v</sub>&#183;K<sub>&beta;</sub>&#183;K<sub>&alpha;</sub> = ' + fmt(Ka,2) + '&times;' + fmt(Kv,2) + '&times;' + fmt(Kb,2) + '&times;' + fmt(Ka2,2) + ' = ' + fmt(K,3) + '</p>';
 
+  // 更新状态徽章
+  updateBadges(m, z, x, alpha, haStar, cStar);
+  resultsDiv.innerHTML = html;
+  resultsDiv.classList.add('show');
   resultsDiv.innerHTML = html;
   resultsDiv.classList.add('show');
 }
