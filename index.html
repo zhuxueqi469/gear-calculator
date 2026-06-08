@@ -680,6 +680,74 @@
   .anim-controls button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   .anim-controls input[type=range] { width: 80px; }
 
+  /* === 根切 Banner === */
+  .undercut-banner {
+    display: none;
+    background: #FEF2F2;
+    border-left: 4px solid #DC2626;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #991B1B;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .undercut-banner.show { display: flex; }
+  .undercut-banner .banner-btn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .banner-btn-fix { background: #DC2626; color: #fff; }
+  .banner-btn-fix:hover { background: #B91C1C; }
+  .banner-btn-detail { background: #fff; color: #991B1B; border: 1px solid #FECACA; }
+  .banner-btn-close { background: none; border: none; color: #991B1B; font-size: 16px; cursor: pointer; padding: 0 4px; }
+
+  /* === 齿数建议框 === */
+  .z-suggestion {
+    display: none;
+    margin-top: 4px;
+    padding: 8px 10px;
+    font-size: 11px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 4px;
+    color: #991B1B;
+    line-height: 1.6;
+  }
+  .z-suggestion.show { display: block; }
+
+  /* === 移动端优化 === */
+  .mobile-toggle {
+    display: none;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 768px) {
+    .app-layout { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; overflow: visible; }
+    .panel-left { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    .panel-left.collapsed { max-height: 0; overflow: hidden; padding: 0 16px; border-bottom: none; }
+    .panel-right { border-left: none; border-top: 1px solid var(--border); }
+    .panel-center { order: 1; min-height: 50vh; }
+    .panel-left { order: 2; }
+    .panel-right { order: 3; }
+    .mobile-toggle { display: block; }
+    .pill-tab { padding: 5px 12px; font-size: 12px; }
+  }
+
   /* === 响应式 === */
   @media (max-width: 1024px) {
     .app-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; overflow: visible; }
@@ -716,10 +784,20 @@
   </div>
 </div>
 
+<!-- 根切警告 Banner -->
+<div class="undercut-banner" id="undercut-banner">
+  <span>⚠️ <span id="banner-msg"></span></span>
+  <button class="banner-btn banner-btn-fix" onclick="applyUndercutFix()">一键修正</button>
+  <button class="banner-btn banner-btn-close" onclick="dismissBanner()">✕</button>
+</div>
+
 <!-- 三栏布局 -->
 <div class="app-layout">
 
-  <!-- 左栏：参数输入 -->
+  <!-- 移动端折叠按钮 -->
+  <button class="mobile-toggle" onclick="document.querySelector('.panel-left').classList.toggle('collapsed')">☰ 展开/折叠参数面板</button>
+
+  <!-- 左栏：参数输入 -->  <!-- 左栏：参数输入 -->
   <div class="panel-left" id="panel-left">
     <!-- Tab1: 基本参数 -->
     <div id="tab-basic-inputs">
@@ -737,6 +815,7 @@
           <button onclick="stepZ(1)">+</button>
         </div>
         <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">最小齿数 ≈ 17 (避免根切)</div>
+        <div class="z-suggestion" id="z-suggestion"></div>
       </div>
       <div class="form-group">
         <label>分度圆直径 d (mm)<span class="help-tip" data-help="d = m×z。输入 m+z 或 d+z 或 m+d 中任意两个算第三个。">?</span></label>
@@ -1244,6 +1323,20 @@ function toggleLayer(layer, btn) {
   }
 }
 
+// ==================== 根切 Banner 操作 ====================
+function dismissBanner() {
+  document.getElementById('undercut-banner').classList.remove('show');
+}
+function applyUndercutFix() {
+  if (window._undercutFixX !== undefined) {
+    document.getElementById('basic-x').value = fmt(window._undercutFixX, 3);
+    document.getElementById('basic-x-slider').value = window._undercutFixX;
+    updateSliderFill();
+    debounceCalc();
+  }
+  dismissBanner();
+}
+
 // ==================== 状态徽章 ====================
 function updateBadges(m, z, x, alpha, haStar, cStar) {
   var row = document.getElementById('badge-row');
@@ -1589,14 +1682,25 @@ function calcBasic() {
 
   // 根切检测 + 建议变位系数
   var zWarn = document.getElementById('basic-z-warn');
+  var zSuggestion = document.getElementById('z-suggestion');
+  var banner = document.getElementById('undercut-banner');
   var alphaRad = alpha * Math.PI / 180;
   var zMin = Math.ceil(2 * haStar / Math.pow(Math.sin(alphaRad), 2));
   var requiredX = haStar * (zMin - z) / zMin;
   if (z < zMin && x < requiredX - 0.001) {
     zWarn.style.display = 'inline';
-    zWarn.textContent = ' ⚠ 根切！z<' + zMin + '，建议 x≥' + fmt(requiredX, 3);
+    zWarn.textContent = ' ⚠';
+    // 详细建议框
+    zSuggestion.style.display = 'block';
+    zSuggestion.innerHTML = '❌ 将产生根切。建议：<br>• 增大齿数至 ≥ ' + zMin + '<br>• 或设置变位系数 x ≥ ' + fmt(requiredX, 3);
+    // Banner
+    banner.classList.add('show');
+    document.getElementById('banner-msg').textContent = '齿数 z=' + z + ' < 最小齿数 ' + zMin + '，将产生根切干涉。';
+    window._undercutFixX = requiredX;
   } else {
     zWarn.style.display = 'none';
+    zSuggestion.style.display = 'none';
+    banner.classList.remove('show');
   }
 
   d = m * z;
