@@ -483,44 +483,50 @@
 
   /* 响应式 - 手机端适配 */
   @media (max-width: 768px) {
-    .container { padding: 16px 8px; }
-    .card { padding: 16px 12px; }
-    .header h1 { font-size: 22px; }
+    .container { padding: 12px 6px; }
+    .card { padding: 14px 10px; }
+    .header h1 { font-size: 20px; }
     .header .subtitle { font-size: 12px; }
-    .tabs { flex-wrap: wrap; gap: 2px; }
-    .tab { font-size: 12px; padding: 8px 10px; flex: unset; border-radius: 6px; }
-    .form-row { grid-template-columns: 1fr; gap: 12px; }
-    .form-group input, .form-group select { font-size: 14px; padding: 8px 10px; }
-    .result-grid, .material-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .result-item { padding: 10px 12px; }
-    .result-item .r-value { font-size: 16px; }
-    .btn { padding: 8px 16px; font-size: 13px; }
-    .btn-row { gap: 6px; }
+    .tabs { flex-wrap: wrap; gap: 2px; padding: 2px; }
+    .tab { font-size: 11px; padding: 7px 9px; flex: unset; border-radius: 5px; }
+    .form-row { grid-template-columns: 1fr; gap: 10px; }
+    .form-group input, .form-group select { font-size: 14px; padding: 7px 9px; }
+    .result-grid, .material-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .result-item { padding: 8px 10px; }
+    .result-item .r-value { font-size: 15px; }
+    .btn { padding: 7px 14px; font-size: 12px; }
+    .btn-row { gap: 4px; }
 
-    /* 表格横向滚动 */
-    .std-table { font-size: 11px; }
-    .std-table td, .std-table th { padding: 4px 6px; white-space: nowrap; }
-    .card { overflow-x: auto; }
+    /* 表格：可滚动容器 + 阴影提示 */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .std-table { font-size: 11px; white-space: nowrap; min-width: 500px; }
+    .std-table td, .std-table th { padding: 5px 7px; }
 
     /* 齿轮图缩放 */
-    .gear-visual svg { max-width: 280px; height: auto; }
+    .gear-visual svg { max-width: 260px; height: auto; }
 
-    /* 啮合动画 canvas */
+    /* 啮合动画 */
     #mesh-canvas { width: 100% !important; height: auto !important; }
 
-    /* 教程按钮缩小 */
-    .guide-btn { width: 36px; height: 36px; font-size: 14px; bottom: 16px; right: 16px; }
-    .guide-panel { padding: 20px; }
+    /* 教程按钮 - 右下角圆形 */
+    .guide-btn { 
+      top: auto; bottom: 16px; right: 12px;
+      width: 40px; height: 40px; padding: 0;
+      border-radius: 50%; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .guide-panel { padding: 18px; max-width: 95%; }
+    .guide-panel h2 { font-size: 16px; }
 
-    /* 历史面板 */
-    #history-panel .std-table { display: block; overflow-x: auto; }
+    /* 主题切换按钮 */
+    #theme-btn { top: 10px; right: 60px; padding: 4px 10px; font-size: 12px; }
   }
 
   @media (max-width: 400px) {
-    .tab { font-size: 11px; padding: 6px 8px; }
+    .tab { font-size: 10px; padding: 5px 7px; }
     .result-grid, .material-grid { grid-template-columns: 1fr; }
-    .gear-visual svg { max-width: 240px; }
-    .header h1 { font-size: 19px; }
+    .gear-visual svg { max-width: 220px; }
+    .header h1 { font-size: 18px; }
   }
 </style>
 </head>
@@ -791,15 +797,15 @@
 
     <!-- 标准模数系列 -->
     <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">&#128207; 标准模数系列 (GB/T 1357-2008)</h3>
-    <table class="std-table">
+    <div class="table-wrap"><table class="std-table">
       <tr><td>第一系列</td><td>1</td><td>1.25</td><td>1.5</td><td>2</td><td>2.5</td><td>3</td><td>4</td><td>5</td><td>6</td><td>8</td><td>10</td><td>12</td><td>16</td><td>20</td><td>25</td><td>32</td><td>40</td><td>50</td></tr>
       <tr><td>第二系列</td><td>1.125</td><td>1.375</td><td>1.75</td><td>2.25</td><td>2.75</td><td>3.5</td><td>4.5</td><td>5.5</td><td>7</td><td>9</td><td>11</td><td>14</td><td>18</td><td>22</td><td>28</td><td>36</td><td>45</td><td></td></tr>
-    </table>
+    </table></div>
     <p style="font-size:12px;color:#95a5b4;margin-top:8px;">优先选用第一系列，其次第二系列。括号内模数尽可能不采用。</p>
 
     <!-- 精度等级 -->
     <h3 style="font-size:16px;font-weight:600;margin:28px 0 12px;">&#127919; 齿轮精度等级 (GB/T 10095)</h3>
-    <table class="std-table">
+    <div class="table-wrap"><table class="std-table">
       <thead>
         <tr><th>精度等级</th><th>应用场合</th><th>切齿方法</th><th>齿面粗糙度 Ra</th></tr>
       </thead>
@@ -807,7 +813,7 @@
       <tr><td>6&#12316;7</td><td>机床、汽车、航空</td><td>磨齿 / 剃齿</td><td>0.8&#12316;1.6</td></tr>
       <tr><td>8&#12316;9</td><td>通用机械、起重机</td><td>滚齿 / 插齿</td><td>3.2&#12316;6.3</td></tr>
       <tr><td>10&#12316;12</td><td>农业机械、低速</td><td>滚齿 / 铸齿</td><td>6.3&#12316;12.5</td></tr>
-    </table>
+    </table></div>
 
     <!-- 常用齿轮材料 -->
     <h3 style="font-size:16px;font-weight:600;margin:28px 0 12px;">&#128300; 常用齿轮材料与许用应力</h3>
@@ -852,7 +858,7 @@
 
     <!-- 核心公式速查 -->
     <h3 style="font-size:16px;font-weight:600;margin:28px 0 12px;">&#128218; 核心公式速查</h3>
-    <table class="std-table">
+    <div class="table-wrap"><table class="std-table">
       <tr>
         <th>参数</th><th>公式</th>
         <th>参数</th><th>公式</th>
@@ -889,7 +895,7 @@
         <td><strong>接触应力</strong></td><td>&sigma;<sub>H</sub> = Z<sub>H</sub>Z<sub>E</sub>&radic;(F<sub>t</sub>/bd<sub>1</sub>&middot;(u+1)/u)</td>
         <td><strong>弯曲应力</strong></td><td>&sigma;<sub>F</sub> = KF<sub>t</sub>Y<sub>Fa</sub>Y<sub>Sa</sub>/(bm)</td>
       </tr>
-    </table>
+    </table></div>
     <p style="font-size:12px;color:#95a5b4;margin-top:8px;">
       标准压力角 &alpha; = 20&deg; &nbsp;|&nbsp; 齿顶高系数 ha* = 1 &nbsp;|&nbsp; 顶隙系数 c* = 0.25 &nbsp;|&nbsp;
       节点区域系数 Z<sub>H</sub> &asymp; 2.5 &nbsp;|&nbsp; 弹性系数 Z<sub>E</sub> &asymp; 189.8 &radic;MPa (钢-钢)
@@ -1450,7 +1456,7 @@ function calcBasic() {
   fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">db = d &times; cos&alpha;</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(d) + ' &times; cos' + alpha + '&deg; = <b>' + fmt(db) + ' mm</b></td></tr>';
   fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">p = &pi; &times; m</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">&pi; &times; ' + fmt(m) + ' = <b>' + fmt(p) + ' mm</b></td></tr>';
   fhtml += '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">s = &pi;m/2 + 2xm&middot;tan&alpha;</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">' + fmt(Math.PI*m/2) + ' + ' + fmt(2*x*m*Math.tan(alpha*Math.PI/180)) + ' = <b>' + fmt(s) + ' mm</b></td></tr>';
-  fhtml += '</table></details>';
+  fhtml += '</table></div></details>';
   fDiv.style.display = 'block';
   fDiv.innerHTML = fhtml;
 
@@ -1520,7 +1526,7 @@ function showHistory() {
     keys.forEach(function(k) { html += '<td>' + (rec[k]||'-') + '</td>'; });
     html += '</tr>';
   });
-  html += '</tbody></table></div>';
+  html += '</tbody></table></div></div>';
   html += '<button class="btn btn-outline" style="margin-top:12px;font-size:12px;" onclick="clearHistory()">清空历史</button>';
   html += '<button class="btn btn-outline" style="margin-top:12px;font-size:12px;" onclick="document.getElementById(\'history-panel\').style.display=\'none\'">关闭</button>';
   panel.style.display = 'block';
