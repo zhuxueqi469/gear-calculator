@@ -375,7 +375,7 @@
         <input type="number" id="basic-d" placeholder="或直接输入 d" step="any" min="0.1">
       </div>
     </div>
-    <p class="formula-hint">&#128161; 输入 m 和 z 自动计算所有参数；或输入 d 和 z 反推模数 m = d / z</p>
+    <p class="formula-hint">&#128161; 输入任意两个参数即可计算第三个：m+z &rarr; d；d+z &rarr; m；m+d &rarr; z</p>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="calcBasic()">计算</button>
       <button class="btn btn-outline" onclick="clearBasic()">清空</button>
@@ -849,14 +849,23 @@ function calcBasic() {
   var dVal = parseFloat(document.getElementById('basic-d').value);
 
   var m, z, d;
-  if (!isNaN(mVal) && !isNaN(zVal)) {
-    m = mVal; z = zVal; d = m * z;
-  } else if (!isNaN(dVal) && !isNaN(zVal)) {
-    d = dVal; z = zVal; m = d / z;
-  } else {
-    resultsDiv.innerHTML = '<p style="color:#e74c3c;margin-top:16px;">请至少输入 (模数+齿数) 或 (分度圆直径+齿数)</p>';
+  var hasM = !isNaN(mVal) && mVal > 0;
+  var hasZ = !isNaN(zVal) && zVal > 0;
+  var hasD = !isNaN(dVal) && dVal > 0;
+  var given = [hasM, hasZ, hasD].filter(Boolean).length;
+
+  if (given < 2) {
+    resultsDiv.innerHTML = '<p style="color:#e74c3c;margin-top:16px;">请至少输入任意两个参数 (m, z, d)</p>';
     resultsDiv.classList.add('show');
     return;
+  }
+
+  if (hasM && hasZ) {
+    m = mVal; z = zVal; d = m * z;
+  } else if (hasD && hasZ) {
+    d = dVal; z = zVal; m = d / z;
+  } else if (hasM && hasD) {
+    m = mVal; d = dVal; z = Math.round(d / m); // 齿数取整
   }
 
   if (m <= 0 || z <= 0) {
